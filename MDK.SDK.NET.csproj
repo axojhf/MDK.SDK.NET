@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Version>0.0.1</Version>
+    <PackageId>MDK.SDK.NET</PackageId>
+    <RepositoryUrl>https://github.com/axojhf/MDK.SDK.NET</RepositoryUrl>
   </PropertyGroup>
 
 </Project>
