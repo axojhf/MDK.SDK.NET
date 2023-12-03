@@ -16,4 +16,5 @@ jobs:
       - name: Pack
         run: |
           dotnet pack -c Release
-          dotnet nuget push "bin/Release/MDK.SDK.NET.1.0.0.nupkg" --source "github" --api-key ${{ secrets.GITHUB_TOKEN }}
+          $nupkgFiles = Get-ChildItem -Path bin\Release\ -Filter *.nupkg
+          dotnet nuget push $nupkgFiles[0].FullName --source "github" --api-key ${{ secrets.GITHUB_TOKEN }}
