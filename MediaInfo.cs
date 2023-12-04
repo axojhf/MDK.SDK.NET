@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using MDK.SDK.NET.Gen;
 
 namespace MDK.SDK.NET;
