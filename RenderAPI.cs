@@ -1,5 +1,5 @@
-using System.Runtime.InteropServices;
 using MDK.SDK.NET.Gen;
+using System.Runtime.InteropServices;
 
 namespace MDK.SDK.NET;
 
@@ -25,7 +25,8 @@ public struct GLRenderAPI
     }
 
     /// <summary>
-    /// NOT IMPLENETED<br/>
+    /// optional. can be null and then standard gl libraries will be searched.<br/>
+    /// if not null, it's used to load gl functions<br/>
     /// void* (*getProcAddress)(const char* name, void* opaque);
     /// </summary>
     public IntPtr GetProcAddress
@@ -35,7 +36,7 @@ public struct GLRenderAPI
     }
 
     /// <summary>
-    /// NOT IMPLENETED<br/>
+    /// optional. getProcAddress user data, e.g. a gl context handle.<br/>
     /// void* (*getCurrentNativeContext)(void* opaque);
     /// </summary>
     public IntPtr GetCurrentNativeContext
@@ -107,6 +108,16 @@ public struct GLRenderAPI
         set { unsafe { internalAPI.version = value; } }
     }
 
+    /// <summary>
+    /// optional. can be null and then standard gl libraries will be searched.<br/>
+    /// if not null, it's used to load gl functions<br/>
+    /// </summary>
+    /// <param name="name">gl function name</param>
+    /// <param name="opaque">user data, e.g. gl context handle</param>
+    /// <returns></returns>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate nint GetProcAddressCallback([MarshalAs(UnmanagedType.LPUTF8Str)] string name, IntPtr opaque);
+
     private mdkGLRenderAPI internalAPI = default;
     public GLRenderAPI()
     {
@@ -126,6 +137,10 @@ public struct GLRenderAPI
         }
     }
 
+    /// <summary>
+    /// Get RenderAPI Ptr For Player.SetRenderAPI()
+    /// </summary>
+    /// <returns></returns>
     public IntPtr GetPtr()
     {
         unsafe
@@ -225,6 +240,10 @@ public struct D3D11RenderAPI
         }
     }
 
+    /// <summary>
+    /// Get RenderAPI Ptr For Player.SetRenderAPI()
+    /// </summary>
+    /// <returns></returns>
     public IntPtr GetPtr()
     {
         unsafe
@@ -325,6 +344,10 @@ public struct MetalRenderAPI
         }
     }
 
+    /// <summary>
+    /// Get RenderAPI Ptr For Player.SetRenderAPI()
+    /// </summary>
+    /// <returns></returns>
     public IntPtr GetPtr()
     {
         unsafe
@@ -469,6 +492,10 @@ public struct VulkanRenderAPI
         }
     }
 
+    /// <summary>
+    /// Get RenderAPI Ptr For Player.SetRenderAPI()
+    /// </summary>
+    /// <returns></returns>
     public IntPtr GetPtr()
     {
         unsafe
@@ -597,6 +624,10 @@ struct D3D12RenderAPI
         }
     }
 
+    /// <summary>
+    /// Get RenderAPI Ptr For Player.SetRenderAPI()
+    /// </summary>
+    /// <returns></returns>
     public IntPtr GetPtr()
     {
         unsafe
