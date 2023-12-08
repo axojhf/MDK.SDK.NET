@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MDK.SDK.NET", "src\MDK.SDK.NET.csproj", "{56D0DE28-79BD-406A-8C00-D3F2D3E0658D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mdk.Avalonia.Example", "Example\Mdk.Avalonia.Example\Mdk.Avalonia.Example.csproj", "{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{56D0DE28-79BD-406A-8C00-D3F2D3E0658D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{56D0DE28-79BD-406A-8C00-D3F2D3E0658D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{56D0DE28-79BD-406A-8C00-D3F2D3E0658D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
