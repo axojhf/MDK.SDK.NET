@@ -18,21 +18,15 @@ public class VideoFrame : IDisposable
     /// <param name="width">Visual width.</param>
     /// <param name="height">Visual height.</param>
     /// <param name="format">Pixel format.</param>
-    /// <param name="strides">Stride of data. If <=0, it's the stride of current format at this plane.</param>
+    /// <param name="strides">Stride of data. If &lt;=0, it's the stride of current format at this plane.</param>
     /// <param name="data">External buffer data ptr.</param>
-    public VideoFrame(int width, int height, PixelFormat format, int[] strides, byte[][] data)
+    public VideoFrame(int width, int height, PixelFormat format, IntPtr strides, IntPtr data)
     {
         unsafe
         {
             p = Methods.mdkVideoFrameAPI_new(width, height, (MDK_PixelFormat)((int)format - 1));
-            if (data != null)
-                fixed (byte* data_ = &data[0][0])
-                {
-                    fixed (int* strides_ = &strides[0])
-                    {
-                        p->setBuffers(p->@object, (byte**)data_, strides_);
-                    }
-                }
+            if (data != 0)
+                p->setBuffers(p->@object, (byte**)data, (int*)strides);
         }
     }
 
@@ -119,19 +113,16 @@ public class VideoFrame : IDisposable
     /// Adds an external buffer to nth plane, store external buffer data ptr. The old buffer will be released.
     /// </summary>
     /// <param name="data">External buffer data ptr.</param>
-    /// <param name="stride">Stride of data. If <=0, it's the stride of current format at this plane.</param>
+    /// <param name="stride">Stride of data. If &lt;=0, it's the stride of current format at this plane.</param>
     /// <param name="buf">External buffer ptr. User should ensure the buffer is alive before frame is destroyed.</param>
     /// <param name="bufDeleter">To delete buf when frame is destroyed.</param>
     /// <param name="plane">Plane index.</param>
     /// <returns>True if successful, false otherwise.</returns>
-    unsafe public bool AddBuffer(byte[] data, int stride, IntPtr buf, delegate* unmanaged[Cdecl]<void**, void> bufDeleter, int plane = -1)
+    unsafe public bool AddBuffer(IntPtr data, int stride, IntPtr buf, delegate* unmanaged[Cdecl]<void**, void> bufDeleter, int plane = -1)
     {
         unsafe
         {
-            fixed (byte* data_ = &data[0])
-            {
-                return Convert.ToBoolean(p->addBuffer(p->@object, data_, stride, (void*)buf, bufDeleter, plane));
-            }
+            return Convert.ToBoolean(p->addBuffer(p->@object, (byte*)data, stride, (void*)buf, bufDeleter, plane));
         }
     }
 
@@ -140,18 +131,12 @@ public class VideoFrame : IDisposable
     /// If data is not null, data is copied to allocated memory.
     /// </summary>
     /// <param name="data">Array of source data planes, array size MUST >= plane count of format if not null. Can be null and allocate memory without copying.</param>
-    /// <param name="strides">Array of plane strides, size MUST >= plane count of format if not null. Can be null and strides[i] can be <=0 indicating no padding bytes (for plane i).</param>
-    public void SetBuffers(byte[][] data, int[] strides)
+    /// <param name="strides">Array of plane strides, size MUST >= plane count of format if not null. Can be null and strides[i] can be &lt;=0 indicating no padding bytes (for plane i).</param>
+    public void SetBuffers(IntPtr data, IntPtr strides)
     {
         unsafe
         {
-            fixed (byte* data_ = &data[0][0])
-            {
-                fixed (int* strides_ = &strides[0])
-                {
-                    p->setBuffers(p->@object, (byte**)data_, strides_);
-                }
-            }
+            p->setBuffers(p->@object, (byte**)data, (int*)strides);
         }
     }
 
@@ -179,8 +164,8 @@ public class VideoFrame : IDisposable
     /// Converts the video frame to the specified format, width and height.
     /// </summary>
     /// <param name="format">Output format. If invalid, same as format().</param>
-    /// <param name="width">Output width. If invalid(<=0), same as width().</param>
-    /// <param name="height">Output height. If invalid(<=0), same as height().</param>
+    /// <param name="width">Output width. If invalid(&lt;=0), same as width().</param>
+    /// <param name="height">Output height. If invalid(&lt;=0), same as height().</param>
     /// <returns>Converted video frame.</returns>
     internal unsafe mdkVideoFrameAPI* To(PixelFormat format, int width = -1, int height = -1)
     {

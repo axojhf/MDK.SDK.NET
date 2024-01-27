@@ -229,7 +229,7 @@ public struct D3D11RenderAPI
     {
         unsafe
         {
-            internalAPI.type = (MDK_RenderAPI)Type;
+            internalAPI.type = MDK_RenderAPI.MDK_RenderAPI_D3D11;
             internalAPI.context = (void*)0;
             internalAPI.rtv = (void*)0;
             internalAPI.debug = 0;
@@ -365,6 +365,72 @@ public struct VulkanRenderAPI
 
     // Set by user and used internally even if device is provided by user
 
+    public IntPtr Instance
+    {
+        get { unsafe { return (nint)internalAPI.instance; } }
+        set { unsafe { internalAPI.instance = (void*)value; } }
+    }
+
+    public IntPtr PhyDevice
+    {
+        get { unsafe { return (nint)internalAPI.phy_device; } }
+        set { unsafe { internalAPI.phy_device = (void*)value; } }
+    }
+
+    public IntPtr Device
+    {
+        get { unsafe { return (nint)internalAPI.device; } }
+        set { unsafe { internalAPI.device = (void*)value; } }
+    }
+
+    public IntPtr GraphicsQueue
+    {
+        get { unsafe { return (nint)internalAPI.graphics_queue; } }
+        set { unsafe { internalAPI.graphics_queue = (void*)value; } }
+    }
+
+    public IntPtr Rt
+    {
+        get { unsafe { return (nint)internalAPI.rt; } }
+        set { unsafe { internalAPI.rt = (void*)value; } }
+    }
+
+    public IntPtr RenderPass
+    {
+        get { unsafe { return (nint)internalAPI.render_pass; } }
+        set { unsafe { internalAPI.render_pass = (void*)value; } }
+    }
+
+    public IntPtr Opaque
+    {
+        get { unsafe { return (nint)internalAPI.opaque; } }
+        set { unsafe { internalAPI.opaque = (void*)value; } }
+    }
+
+    public IntPtr RenderTargetInfo
+    {
+        get { unsafe { return (nint)internalAPI.renderTargetInfo; } }
+        set { unsafe { internalAPI.renderTargetInfo = (delegate* unmanaged[Cdecl]<void*, int*, int*, void*, void*, int>)value; } }
+    }
+
+    public IntPtr BeginFrame
+    {
+        get { unsafe { return (nint)internalAPI.beginFrame; } }
+        set { unsafe { internalAPI.beginFrame = (delegate* unmanaged[Cdecl]<void*, void*, void*, void*, int>)value; } }
+    }
+
+    public IntPtr CurrentCommandBuffer
+    {
+        get { unsafe { return (nint)internalAPI.currentCommandBuffer; } }
+        set { unsafe { internalAPI.currentCommandBuffer = (delegate* unmanaged[Cdecl]<void*, void*>)value; } }
+    }
+
+    public IntPtr EndFrame
+    {
+        get { unsafe { return (nint)internalAPI.endFrame; } }
+        set { unsafe { internalAPI.endFrame = (delegate* unmanaged[Cdecl]<void*, void*, void>)value; } }
+    }
+
     /// <summary>
     /// MUST if graphics and transfer queue family are different
     /// </summary>
@@ -400,8 +466,10 @@ public struct VulkanRenderAPI
         get { unsafe { return internalAPI.present_family; } }
         set { unsafe { internalAPI.present_family = value; } }
     }
-    // Render Context Creation Options.
-    // as input, they are desired values to create an internal context(ignored if context is provided by user). as output, they are result values(if context is not provided by user)
+    /// <summary>
+    /// Render Context Creation Options.
+    /// as input, they are desired values to create an internal context(ignored if context is provided by user). as output, they are result values(if context is not provided by user)
+    /// </summary>
     public bool Debug
     {
         get
@@ -477,12 +545,23 @@ public struct VulkanRenderAPI
         unsafe
         {
             internalAPI.type = MDK_RenderAPI.MDK_RenderAPI_Vulkan;
+            internalAPI.instance = (void*)0;
+            internalAPI.phy_device = (void*)0;
+            internalAPI.device = (void*)0;
+            internalAPI.graphics_queue = (void*)0;
+            internalAPI.rt = (void*)0;
+            internalAPI.render_pass = (void*)0;
+            internalAPI.opaque = (void*)0;
+            internalAPI.renderTargetInfo = (delegate* unmanaged[Cdecl]<void*, int*, int*, void*, void*, int>)0;
+            internalAPI.beginFrame = (delegate* unmanaged[Cdecl]<void*, void*, void*, void*, int>)0;
+            internalAPI.currentCommandBuffer = (delegate* unmanaged[Cdecl]<void*, void*>)0;
+            internalAPI.endFrame = (delegate* unmanaged[Cdecl]<void*, void*, void>)0;
             internalAPI.graphics_family = -1;
             internalAPI.compute_family = -1;
             internalAPI.transfer_family = -1;
             internalAPI.present_family = -1;
-            internalAPI.debug = 2;
-            internalAPI.buffers = 0;
+            internalAPI.debug = 0;
+            internalAPI.buffers = 2;
             internalAPI.device_index = -1;
             internalAPI.max_version = 0;
             internalAPI.gfx_queue_index = 0;

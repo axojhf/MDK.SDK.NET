@@ -59,6 +59,9 @@ public partial struct VideoCodecParameters
 
     public uint codec_tag;
 
+    /// <summary>
+    /// without padding data
+    /// </summary>
     public IntPtr extra_data;
 
     public int extra_data_size;
@@ -71,8 +74,14 @@ public partial struct VideoCodecParameters
 
     public float frame_rate;
 
+    /// <summary>
+    /// pixel format
+    /// </summary>
     public int format;
 
+    /// <summary>
+    /// pixel format name
+    /// </summary>
     public string format_name;
 
     public int width;
@@ -94,12 +103,21 @@ public partial struct VideoStreamInfo
 
     public long frames;
 
+    /// <summary>
+    /// degree need to rotate clockwise
+    /// </summary>
     public int rotation;
 
+    /// <summary>
+    /// stream language is metadata["language"]
+    /// </summary>
     public Dictionary<string, string> metadata;
 
     public VideoCodecParameters codec;
 
+    /// <summary>
+    /// audio cover art image data, can be jpeg, png etc.
+    /// </summary>
     public byte[] image_data;
 
     public int image_size;
@@ -111,12 +129,21 @@ public unsafe partial struct SubtitleCodecParameters
 
     public uint codec_tag;
 
+    /// <summary>
+    /// without padding data
+    /// </summary>
     public IntPtr extra_data;
 
     public int extra_data_size;
 
+    /// <summary>
+    /// display width. bitmap subtitles only
+    /// </summary>
     public int width;
 
+    /// <summary>
+    /// display height. bitmap subtitles only
+    /// </summary>
     public int height;
 }
 
@@ -128,6 +155,9 @@ public partial struct SubtitleStreamInfo
 
     public long duration;
 
+    /// <summary>
+    /// stream language is metadata["language"]
+    /// </summary>
     public Dictionary<string, string> metadata;
 
     public SubtitleCodecParameters codec;
@@ -146,19 +176,31 @@ public partial struct ProgramInfo
 {
     public int id;
 
+    /// <summary>
+    /// stream index
+    /// </summary>
     public List<int> stream;
 
+    /// <summary>
+    /// "service_name", "service_provider" etc.
+    /// </summary>
     public Dictionary<string, string> metadata;
 }
 
 public partial struct MediaInfo
 {
+    /// <summary>
+    /// ms
+    /// </summary>
     public long start_time;
 
     public long duration;
 
     public long bit_rate;
 
+    /// <summary>
+    /// file size. IGNORE ME!
+    /// </summary>
     public long size;
 
     public string format;

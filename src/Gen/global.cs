@@ -181,23 +181,23 @@ namespace MDK.SDK.NET.Gen
     internal static unsafe partial class Methods
     {
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial int MDK_version();
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void* MDK_javaVM(void* vm);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_setLogLevel(MDK_LogLevel value);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial MDK_LogLevel MDK_logLevel();
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_setLogHandler(mdkLogHandler param0);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
@@ -240,12 +240,12 @@ namespace MDK.SDK.NET.Gen
         internal const int MDK_MAJOR = 0;
 
         [NativeTypeName("#define MDK_MINOR 23")]
-        internal const int MDK_MINOR = 23;
+        internal const int MDK_MINOR = 24;
 
         [NativeTypeName("#define MDK_MICRO 0")]
         internal const int MDK_MICRO = 0;
 
         [NativeTypeName("#define MDK_VERSION MDK_VERSION_INT(MDK_MAJOR, MDK_MINOR, MDK_MICRO)")]
-        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((23 & 0xff) << 8) | (0 & 0xff));
+        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((24 & 0xff) << 8) | (0 & 0xff));
     }
 }

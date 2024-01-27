@@ -102,47 +102,79 @@ namespace MDK.SDK.NET.Gen
     internal unsafe partial struct mdkVulkanRenderAPI
     {
         [NativeTypeName("enum MDK_RenderAPI")]
-        internal MDK_RenderAPI type;
+        public MDK_RenderAPI type;
+
+        [NativeTypeName("VkInstance")]
+        public void* instance;
+
+        [NativeTypeName("VkPhysicalDevice")]
+        public void* phy_device;
+
+        [NativeTypeName("VkDevice")]
+        public void* device;
+
+        [NativeTypeName("VkQueue")]
+        public void* graphics_queue;
+
+        [NativeTypeName("VkImage")]
+        public void* rt;
+
+        [NativeTypeName("VkRenderPass")]
+        public void* render_pass;
+
+        public void* opaque;
+
+        [NativeTypeName("int (*)(void *, int *, int *, VkFormat *, VkImageLayout *)")]
+        public delegate* unmanaged[Cdecl]<void*, int*, int*, void*, void*, int> renderTargetInfo;
+
+        [NativeTypeName("int (*)(void *, VkImageView *, VkFramebuffer *, VkSemaphore *)")]
+        public delegate* unmanaged[Cdecl]<void*, void*, void*, void*, int> beginFrame;
+
+        [NativeTypeName("VkCommandBuffer (*)(void *)")]
+        public delegate* unmanaged[Cdecl]<void*, void*> currentCommandBuffer;
+
+        [NativeTypeName("void (*)(void *, VkSemaphore *)")]
+        public delegate* unmanaged[Cdecl]<void*, void*, void> endFrame;
 
         [NativeTypeName("void *[2]")]
-        internal _reserved_e__FixedBuffer reserved;
+        public _reserved_e__FixedBuffer reserved;
 
-        internal int graphics_family;
+        public int graphics_family;
 
-        internal int compute_family;
+        public int compute_family;
 
-        internal int transfer_family;
+        public int transfer_family;
 
-        internal int present_family;
+        public int present_family;
 
         [NativeTypeName("bool")]
-        internal byte debug;
+        public byte debug;
 
         [NativeTypeName("uint8_t")]
-        internal byte buffers;
+        public byte buffers;
 
-        internal int device_index;
+        public int device_index;
 
         [NativeTypeName("uint32_t")]
-        internal uint max_version;
+        public uint max_version;
 
-        internal int gfx_queue_index;
+        public int gfx_queue_index;
 
-        internal int transfer_queue_index;
+        public int transfer_queue_index;
 
-        internal int compute_queue_index;
+        public int compute_queue_index;
 
-        internal int depth;
+        public int depth;
 
         [NativeTypeName("uint8_t[32]")]
-        internal fixed byte reserved_opt[32];
+        public fixed byte reserved_opt[32];
 
-        internal unsafe partial struct _reserved_e__FixedBuffer
+        public unsafe partial struct _reserved_e__FixedBuffer
         {
-            internal void* e0;
-            internal void* e1;
+            public void* e0;
+            public void* e1;
 
-            internal ref void* this[int index]
+            public ref void* this[int index]
             {
                 get
                 {

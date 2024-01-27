@@ -5,6 +5,9 @@ using CallbackToken = System.UInt64;
 
 namespace MDK.SDK.NET;
 
+/// <summary>
+/// High level API with basic playback function.
+/// </summary>
 public class MDKPlayer : IDisposable
 {
     unsafe private mdkPlayerAPI* p = null;
@@ -32,6 +35,9 @@ public class MDKPlayer : IDisposable
     private static CallbackToken onEvent_k = 1;
     private static CallbackToken onLoop_k = 1;
 
+    /// <summary>
+    /// Initializes a new instance of MDK player.
+    /// </summary>
     public MDKPlayer()
     {
         unsafe
@@ -41,6 +47,12 @@ public class MDKPlayer : IDisposable
         owner_ = true;
     }
 
+    /// <summary>
+    /// Release GL resources bound to the context.<br/>
+    /// MUST be called when a foreign OpenGL context previously used is being destroyed and player object is already destroyed. The context MUST be current.<br/>
+    /// If player object is still alive, setVideoSurfaceSize(-1, -1, ...) is preferred.<br/>
+    /// If forget to call both foreignGLContextDestroyed() and setVideoSurfaceSize(-1, -1, ...) in the context, resources will be released in the next draw in the same context.  But the context may be destroyed later, then resource will never be released<br/>
+    /// </summary>
     public static void ForeignGLContextDestroyed()
     {
         Methods.MDK_foreignGLContextDestroyed();
@@ -60,6 +72,12 @@ public class MDKPlayer : IDisposable
         return mute_;
     }
 
+    /// <summary>
+    /// Set audio volume level<br/>
+    /// The same as ms log2(SpeakerPosition), see https://docs.microsoft.com/windows-hardware/drivers/ddi/ksmedia/ns-ksmedia-ksaudio_channel_config#remarks
+    /// </summary>
+    /// <param name="value">linear volume level, range is >=0. 1.0 is source volume</param>
+    /// <param name="channel">channel number, int value of AudioFormat::Channel, -1 for all channels.</param>
     public void SetVolume(float value, int channel = -1)
     {
         unsafe
@@ -76,11 +94,24 @@ public class MDKPlayer : IDisposable
         volume_ = value;
     }
 
+    /// <summary>
+    /// Get audio volume level
+    /// </summary>
+    /// <returns>linear volume level, range from 0.0 to 1.0</returns>
     public float Volume()
     {
         return volume_;
     }
 
+    /// <summary>
+    /// Set frame rate, frames per seconds
+    /// </summary>
+    /// <param name="value">
+    /// frame rate
+    /// <para>0 (default): use frame timestamp, or default frame rate 25.0fps if stream has no timestamp</para>
+    /// <para>&lt;0: render ASAP.</para>
+    /// <para>&gt;0: target frame rate</para>
+    /// </param>
     public void SetFrameRate(float value)
     {
         unsafe
@@ -90,7 +121,8 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    ///  Set a new media url.  If url changed, will stop current playback, and reset active tracks, external tracks set by SetMedia(url, type)
+    /// Set a new media url.  If url changed, will stop current playback, and reset active tracks, external tracks set by setMedia(url, type)<br/>
+    /// MUST call setActiveTracks() after setMedia(), otherwise the 1st track in the media is used
     /// </summary>
     /// <param name="url"></param>
     public void SetMedia(string url)
@@ -103,6 +135,15 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Set an individual source as track of `type`, e.g. audio track file, external subtile file. **MUST** be after main media `setMedia(url)`.<br/>
+    /// If url is empty, use `type` tracks in MediaType::Video url.<br/>
+    /// The url can contains other track types, e.g.you can load an external audio/subtitle track from a video file, and use `setActiveTracks()` to select a track.<br/>
+    ///  Note: because of filesystem restrictions on some platforms(iOS, macOS, uwp), and unable to access files in a sandbox, so you have to load subtitle files manually yourself via this function.
+    /// <para>examples: set subtitle file: <code>setMedia("name.ass", MediaType::Subtitle)</code></para>
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="type"></param>
     public void SetMedia(string url, MediaType type)
     {
         unsafe
@@ -130,6 +171,14 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gapless play the next media after current media playback end<br/>
+    /// set(State::Stopped) only stops current media. Call setNextMedia(nullptr, -1) first to disable next media.<br/>
+    /// Usually you can call <code>currentMediaChanged()</code> to set a callback which invokes <code>setNextMedia()</code>, then call <code>setMedia()</code>.
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="startPosition"></param>
+    /// <param name="flags">seek flags if startPosition > 0, accurate or fast</param>
     public void SetNextMedia(string url, long startPosition = 0, SeekFlag flags = SeekFlag.FromStart)
     {
         unsafe
@@ -142,6 +191,11 @@ public class MDKPlayer : IDisposable
 
     public delegate void CallbackCurrentMediaChanged();
 
+    /// <summary>
+    /// Set a callback which is invoked when current media is stopped and a new media is about to play, or when setMedia() is called.<br/>
+    /// Call before setMedia() to take effect.
+    /// </summary>
+    /// <param name="cb"></param>
     public void CurrentMediaChanged(CallbackCurrentMediaChanged cb)
     {
         current_cb_ = cb;
@@ -161,6 +215,12 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="type">if type is MediaType::Unknown, select a program(usually for mpeg ts streams). must contains only 1 value, N, indicates using the Nth program's audio and video tracks.
+    /// Otherwise, select a set of tracks of given type.</param>
+    /// <param name="tracks">tracks set of active track number, from 0~N. Invalid track numbers will be ignored</param>
     public void SetActiveTracks(MediaType type, HashSet<int> tracks)
     {
         unsafe
@@ -174,7 +234,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// backends can be: AudioQueue(Apple only), OpenSL(Android only), ALSA(linux only), XAudio2(Windows only), OpenAL
+    /// backends can be: AudioQueue(Apple only), OpenSL, AudioTrack(Android only), ALSA(linux only), XAudio2(Windows only), OpenAL
     /// </summary>
     /// <param name="names"></param>
     public void SetAudioBackends(List<string> names)
@@ -218,6 +278,15 @@ public class MDKPlayer : IDisposable
     }
 
     public delegate bool CallBackOnTimeout(long ms);
+    /// <summary>
+    /// callback ms: elapsed milliseconds<br/>
+    /// callback return: true to abort current operation on timeout.<br/>
+    /// A null callback can abort current operation.<br/>
+    /// Negative timeout infinit.<br/>
+    /// Default timeout is 10s
+    /// </summary>
+    /// <param name="ms"></param>
+    /// <param name="cb"></param>
     public void SetTimeout(long ms, CallBackOnTimeout cb)
     {
         unsafe
@@ -237,7 +306,23 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// PrepareCallback<br/>
+    /// example: always return false can be used as media information reader
+    /// </summary>
+    /// <param name="position">position in callback is the timestamp of the 1st frame(video if exists) after seek, or &lt; 0 (TODO: error code as position) if prepare() failed.</param>
+    /// <param name="boost">boost in callback can be set by user(*boost = true/false) to boost the first frame rendering. default is true.</param>
+    /// <returns>false to unload media immediately when media is loaded and MediaInfo is ready, true to continue.</returns>
     public delegate bool CallBackOnPrepare(long position, IntPtr boost);
+    /// <summary>
+    /// Preload a media and then becomes State::Paused.<br/>
+    /// To play a media from a given position, call prepare(ms) then set(State::Playing)<br/>
+    /// For fast seek(has flag SeekFlag::Fast), the first frame is a key frame whose timestamp >= startPosition<br/>
+    /// For accurate seek(no flag SeekFlag::Fast), the first frame is the nearest frame whose timestamp &lt;= startPosition, but the position passed to callback is the key frame position &lt;= startPosition
+    /// </summary>
+    /// <param name="startPosition">start from position, relative to media start position(i.e. MediaInfo.start_time)</param>
+    /// <param name="cb">if startPosition > 0, same as callback of seek(), called after the first frame is decoded or load/seek/decode error. If startPosition == 0, called when media is loaded and mediaInfo is ready or load error.</param>
+    /// <param name="flags">seek flag if startPosition != 0.</param>
     public void Prepare(long startPosition = 0, CallBackOnPrepare? cb = null, SeekFlag flags = SeekFlag.FromStart)
     {
         unsafe
@@ -257,6 +342,11 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Current MediaInfo. You can call it in prepare() callback which is called when loaded or load failed.<br/>
+    /// Some fields can change during playback, e.g.video frame size change(via MediaEvent), live stream duration change, realtime bitrate change.<br/>
+    /// You may get an invalid value if mediaInfo() is called immediately after `set(State::Playing)` or `prepare()` because media is still opening but not loaded , i.e.mediaStatus() has no MediaStatus::Loaded flag.
+    /// </summary>
     public MediaInfo? mediaInfo
     {
         get
@@ -324,6 +414,12 @@ public class MDKPlayer : IDisposable
         return this;
     }
 
+    /// <summary>
+    /// If failed to open a media, e.g. invalid media, unsupported format, waitFor() will finish without state change
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="timeout"></param>
+    /// <returns></returns>
     public bool WaitFor(State value, long timeout = -1)
     {
         unsafe
@@ -366,7 +462,7 @@ public class MDKPlayer : IDisposable
     /// <param name="surface"></param>
     /// <param name="width"></param>
     /// <param name="height"></param>
-    /// <param name="type"></param>
+    /// <param name="type">ignored if win ptr does not change (request to resize)</param>
     public void UpdateNativeSurface(IntPtr surface, int width = -1, int height = -1, SurfaceType type = SurfaceType.Auto)
     {
         unsafe
@@ -400,6 +496,14 @@ public class MDKPlayer : IDisposable
     }
 
     public delegate string CallBackOnSnapshot(IntPtr request, double position);
+    /// <summary>
+    /// take a snapshot from current renderer. The result is in bgra format, or null on failure.<br/>
+    /// When `snapshot()` is called, redraw is scheduled for `vo_opaque`'s renderer, then renderer will take a snapshot in rendering thread.<br/>
+    /// So for a foreign context, if renderer's surface/window/widget is invisible or minimized, snapshot may do nothing because of system or gui toolkit painting optimization.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="cb"></param>
+    /// <param name="vo_opaque"></param>
     public void Snapshot(IntPtr request, CallBackOnSnapshot cb, IntPtr vo_opaque = 0)
     {
         snapshot_cb_ = cb;
@@ -419,6 +523,24 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Set additional properties. Can be used to store user data, or change player behavior if the property is defined internally.
+    ///Predefined properties are:
+    /// <para></para>
+    /// <para>"audio.avfilter": ffmpeg avfilter filter graph string for audio track. take effect immediately</para>
+    /// <para>"continue_at_end" or "keep_open": "0" or "1". do not stop playback when decode and render to end of stream. only set(State::Stopped) can stop playback. Useful for timeline preview.</para>
+    /// <para>"cc": "0" or "1"(default). enable closed caption decoding and rendering.</para>
+    /// <para>"subtitle": "0" or "1"(default). enable subtitle(including cc) rendering. setActiveTracks(MediaType::Subtitle, {...}) enables decoding only.</para>
+    /// <para>"avformat.some_name": avformat option, e.g. {"avformat.fpsprobesize": "0"}. if global option "demuxer.io=0", it also can be AVIOContext/URLProtocol option</para>
+    /// <para>"avio.some_name": AVIOContext/URLProtocol option, e.g. "avio.user_agent"</para>
+    /// <para>"avcodec.some_name": AVCodecContext option, will apply for all FFmpeg based video/audio/subtitle decoders. To set for a single decoder, use setDecoders() with options</para>
+    /// <para>"audio.decoder": audio decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
+    /// <para>"video.decoder": video decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
+    /// <para>"decoder": video and audio decoder property, value is "key=value" or "key1=value1:key2=value2"</para>
+    /// <para>"recorder.copyts": "1" or "0"(default), use input packet timestamp, or correct packet timestamp to be continuous.</para>
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="value"></param>
     public void SetProperty(string name, string value)
     {
         unsafe
@@ -460,6 +582,15 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// The rectangular viewport where the scene will be drawn relative to surface viewport.<br/>
+    /// x, y, w, h are normalized to[0, 1]
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    /// <param name="vo_opaque"></param>
     public void SetVideoViewport(float x, float y, float width, float height, IntPtr vo_opaque = default)
     {
         unsafe
@@ -468,6 +599,16 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Video display aspect ratio.
+    /// IgnoreAspectRatio(0): ignore aspect ratio and scale to fit renderer viewport<br/>
+    /// KeepAspectRatio(default) : keep frame aspect ratio and scale as large as possible inside renderer viewport<br/>
+    /// KeepAspectRatioCrop: keep frame aspect ratio and scale as small as possible outside renderer viewport<br/>
+    /// other value &gt; 0: like KeepAspectRatio, but keep given aspect ratio and scale as large as possible inside renderer viewport<br/>
+    /// other value &lt; 0: like KeepAspectRatioCrop, but keep given aspect ratio and scale as small as possible inside renderer viewport
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="vo_opaque"></param>
     public void SetAspectRatio(float value, IntPtr vo_opaque = default)
     {
         unsafe
@@ -476,6 +617,11 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// rotate around video frame center
+    /// </summary>
+    /// <param name="degree">0, 90, 180, 270, counterclockwise</param>
+    /// <param name="vo_opaque"></param>
     public void Rotate(int degree, IntPtr vo_opaque = default)
     {
         unsafe
@@ -484,6 +630,12 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// scale frame size. x, y can be < 0, means scale and flip.
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="vo_opaque"></param>
     public void Scale(float x, float y, IntPtr vo_opaque = default)
     {
         unsafe
@@ -492,6 +644,14 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// map a point from one coordinates to another. a frame must be rendered. coordinates is normalized to [0, 1].
+    /// </summary>
+    /// <param name="dir"></param>
+    /// <param name="x">points to x coordinate of viewport or currently rendered video frame</param>
+    /// <param name="y"></param>
+    /// <param name="z">not used</param>
+    /// <param name="vo_opaque"></param>
     public void MapPoint(MapDirection dir, IntPtr x, IntPtr y, IntPtr z = default, IntPtr vo_opaque = default)
     {
         unsafe
@@ -500,6 +660,13 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Can be called on any thread
+    /// </summary>
+    /// <param name="videoRoi">array of 2d point (x, y) in video frame. coordinate: top-left = (0, 0), bottom-right=(1, 1). set null to disable mapping</param>
+    /// <param name="viewRoi">array of 2d point (x, y) in video renderer. coordinate: top-left = (0, 0), bottom-right=(1, 1). null is the whole renderer.</param>
+    /// <param name="count">point count. only support 2. set 0 to disable mapping</param>
+    /// <param name="vo_opaque"></param>
     public void SetPointMap(IntPtr videoRoi, IntPtr viewRoi, int count = 2, IntPtr vo_opaque = default)
     {
         unsafe
@@ -508,6 +675,12 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// set render api for a vo, useful for non-opengl(no way to get current context)
+    /// </summary>
+    /// <param name="api">To release gfx resources, set null api in rendering thread/context(required by vulkan)</param>
+    /// <param name="vo_opaque"></param>
+    /// <returns></returns>
     public MDKPlayer SetRenderAPI(IntPtr api, IntPtr vo_opaque = default)
     {
         unsafe
@@ -517,6 +690,11 @@ public class MDKPlayer : IDisposable
         return this;
     }
 
+    /// <summary>
+    /// get render api. For offscreen rendering, may only api type be valid in setRenderAPI(), and other members are filled internally, and used by user after renderVideo()
+    /// </summary>
+    /// <param name="vo_opaque"></param>
+    /// <returns></returns>
     public IntPtr RenderAPI(IntPtr vo_opaque = default)
     {
         unsafe
@@ -525,6 +703,12 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Render the next or current(redraw) frame. Foreign render context only (i.e. not created by createSurface()/updateNativeSurface()).<br/>
+    /// OpenGL: Can be called in multiple foreign contexts for the same vo_opaque.
+    /// </summary>
+    /// <param name="vo_opaque"></param>
+    /// <returns>timestamp of rendered frame, or &lt; 0 if no frame is rendered. precision is microsecond</returns>
     public double RenderVideo(IntPtr vo_opaque = 0)
     {
         unsafe
@@ -533,6 +717,11 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Send the frame to video renderer. You must call renderVideo() later in render thread
+    /// </summary>
+    /// <param name="frame"></param>
+    /// <param name="opaque"></param>
     public void Enqueue(IntPtr frame, IntPtr opaque = 0)
     {
         unsafe
@@ -541,6 +730,14 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// r, g, b, a range is [0, 1]. default is 0. if out of range, background color will not be filled
+    /// </summary>
+    /// <param name="r"></param>
+    /// <param name="g"></param>
+    /// <param name="b"></param>
+    /// <param name="a"></param>
+    /// <param name="vo_opaque"></param>
     public void SetBackgroundColor(float r, float g, float b, float a, IntPtr vo_opaque = 0)
     {
         unsafe
@@ -557,6 +754,16 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Set output color space.
+    /// </summary>
+    /// <param name="effect"></param>
+    /// <param name="value">
+    /// <para>invalid (ColorSpaceUnknown): renderer will try to use the value of decoded frame, and will send hdr10 metadata when possible. i.e. hdr videos will enable hdr display. Currently only supported by metal, and `MetalRenderAPI.layer` must be a `CAMetalLayer` ([example](https://github.com/wang-bin/mdkSwift/blob/master/Player.swift#L184))</para>
+    /// <para>hdr colorspace(ColorSpaceBT2100_PQ): no hdr metadata will be sent to the display, sdr will map to hdr.Can be used by the gui toolkits which support hdr swapchain but no api to change swapchain colorspace and format on the fly, see[Qt example] (https://github.com/wang-bin/mdk-examples/blob/master/Qt/qmlrhi/VideoTextureNodePub.cpp#L83)</para>
+    /// <para>sdr color space(ColorSpaceBT709) : the default. HDR videos will tone map to SDR.</para>
+    /// </param>
+    /// <param name="vo_opaque"></param>
     public void Set(ColorSpace value, IntPtr vo_opaque = 0)
     {
         unsafe
@@ -566,6 +773,14 @@ public class MDKPlayer : IDisposable
     }
 
     public delegate void CallBackOnRender(IntPtr vo_opaque);
+    /// <summary>
+    /// set a callback which is invoked when the vo coresponding to vo_opaque needs to update/draw content, e.g. when a new frame is received in the renderer.<br/>
+    /// Also invoked in setVideoSurfaceSize(), setVideoViewport(), setAspectRatio() and rotate(), take care of dead lock in callback and above functions.<br/>
+    /// with vo_opaque, user can know which vo/renderer is rendering, useful for multiple renderers<br/>
+    /// There may be no frames or playback not even started, but renderer update is required internally<br/>
+    /// DO NOT call renderVideo() in the callback, otherwise will results in dead lock
+    /// </summary>
+    /// <param name="cb"></param>
     public void SetRenderCallback(CallBackOnRender cb)
     {
         render_cb_ = cb;
@@ -585,6 +800,10 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Current playback time in milliseconds. Relative to media's first timestamp, which usually is 0.<br/>
+    /// If has active video tracks, it's currently presented video frame time. otherwise, it's audio time.
+    /// </summary>
     public long Position
     {
         get { unsafe { return p->position(p->@object); } }
@@ -644,23 +863,58 @@ public class MDKPlayer : IDisposable
         set { unsafe { p->setPlaybackRate(p->@object, value); } }
     }
 
-    public void Buffed(IntPtr bytes = 0)
+    /// <summary>
+    /// get buffered undecoded data duration and size
+    /// </summary>
+    /// <param name="bytes"></param>
+    /// <returns>buffered data(packets) duration</returns>
+    public long Buffed(IntPtr bytes = 0)
     {
         unsafe
         {
-            p->buffered(p->@object, (long*)bytes);
+            return p->buffered(p->@object, (long*)bytes);
         }
     }
 
-    public void SetBufferRange(long min = -1, long max = -1, bool drop = false)
+    /// <summary>
+    /// set duration range of buffered data.<br/>
+    /// For realtime streams like(rtp, rtsp, rtmp sdp etc.), the default range is [0, INT64_MAX, true].<br/>
+    /// Usually you don't need to call this api. This api can be used for low latency live videos, for example setBufferRange(0, INT64_MAX, true) will decode as soon as possible when media data received, and no accumulated delay.
+    /// </summary>
+    /// <param name="minMs">
+    /// default 1000. wait for buffered duration >= minMs when before popping a packet.
+    /// <para>If minMs &lt; 0, then minMs, maxMs and drop will be reset to the default value.</para>
+    /// <para>If minMs > 0, when packets queue becomes empty, `MediaStatus::Buffering` will be set until queue duration >= minMs, "reader.buffering" MediaEvent will be triggered.</para>
+    /// <para>If minMs == 0, decode ASAP.</para>
+    /// </param>
+    /// <param name="maxMs">
+    /// default 4000. max buffered duration. Large value is recommended. Latency is not affected.
+    /// <para>If maxMs &lt; 0, then maxMs and drop will be reset to the default value</para>
+    /// <para>If maxMs == 0, same as INT64_MAX drop = true:</para>
+    /// </param>
+    /// <param name="drop">
+    /// <para>drop = true:<br/>
+    /// drop old non-key frame packets to reduce buffered duration until &lt; maxMs. If maxMs(!= 0 or INT64_MAX) is smaller than key-frame interval, no drop effect.<br/>
+    /// If maxMs == 0 or INT64_MAX, always drop old packets and keep at most 1 key-frame packet</para>
+    /// <para>drop = false: <br/>
+    /// wait for buffered duration &lt; maxMs before pushing packets</para>
+    /// </param>
+    public void SetBufferRange(long minMs = -1, long maxMs = -1, bool drop = false)
     {
         unsafe
         {
-            p->setBufferRange(p->@object, min, max, (byte)(drop ? 1 : 0));
+            p->setBufferRange(p->@object, minMs, maxMs, (byte)(drop ? 1 : 0));
         }
     }
 
     public delegate void CallBackOnSwitchBitrate(bool a);
+
+    /// <summary>
+    /// A new media will be played later
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="delay">switch after at least delay ms. TODO: determined by buffered time, e.g. from high bit rate without enough buffered samples to low bit rate</param>
+    /// <param name="cb">(true/false) called when finished/failed</param>
     public void SwitchBitrate(string url, long delay = -1, CallBackOnSwitchBitrate? cb = null)
     {
         switch_cb_ = cb;
@@ -682,7 +936,15 @@ public class MDKPlayer : IDisposable
         }
     }
 
-    public void SwitchBitrateSingleConnection(string url, CallBackOnSwitchBitrate? cb = null)
+    /// <summary>
+    /// Only 1 media is loaded. The previous media is unloaded and the playback continues. When new media is preloaded, stop the previous media at some point<br/>
+    /// * MUST call setPreloadImmediately(false) because PreloadImmediately for signal connection preload is not possible.<br/>
+    /// This will not affect next media set by user
+    /// </summary>
+    /// <param name="url"></param>
+    /// <param name="cb"></param>
+    /// <returns>false if preload immediately</returns>
+    public bool SwitchBitrateSingleConnection(string url, CallBackOnSwitchBitrate? cb = null)
     {
         switch_cb_ = cb;
         unsafe
@@ -698,8 +960,9 @@ public class MDKPlayer : IDisposable
                 opaque = (void*)(switch_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(switch_cb_)),
             };
             var _url = Marshal.StringToCoTaskMemUTF8(url);
-            p->switchBitrateSingleConnection(p->@object, _url, callback);
+            var ret = p->switchBitrateSingleConnection(p->@object, _url, callback);
             Marshal.FreeCoTaskMem(_url);
+            return ret != 0;
         }
     }
 
@@ -765,6 +1028,15 @@ public class MDKPlayer : IDisposable
         return this;
     }
 
+    /// <summary>
+    /// Start to record or stop recording current media by remuxing packets read. If media is not loaded, recorder will start when playback starts<br/>
+    /// examples:<br/>
+    /// player.record("record.mov");<br/>
+    /// player.record("rtmp://127.0.0.1/live/0", "flv");<br/>
+    /// player.record("rtsp://127.0.0.1/live/0", "rtsp");
+    /// </summary>
+    /// <param name="url">destination. null or the same value as recording one to stop recording. can be a local file, or a network stream</param>
+    /// <param name="format">forced format. if null, guess from url. if null and format guessed from url does not support all codecs of current media, another suitable format will be used</param>
     public void Record(string url, string format)
     {
         unsafe
@@ -777,13 +1049,23 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Set A-B loop repeat count.
+    /// </summary>
+    /// <param name="count">repeat count. 0 to disable looping and stop when out of range(B)</param>
     public void SetLoop(int count)
     {
         unsafe { p->setLoop(p->@object, count); }
     }
 
     public delegate void CallBackOnLoop(int count);
-    public MDKPlayer OnLoop(CallBackOnLoop cb, IntPtr token)
+    /// <summary>
+    /// add/remove a callback which will be invoked right before a new A-B loop
+    /// </summary>
+    /// <param name="cb">callback with current loop count elapsed</param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public MDKPlayer OnLoop(CallBackOnLoop cb, IntPtr token = 0)
     {
         unsafe
         {
@@ -828,6 +1110,11 @@ public class MDKPlayer : IDisposable
         return this;
     }
 
+    /// <summary>
+    /// Set A-B loop range, or playback range
+    /// </summary>
+    /// <param name="a">loop position begin, in ms.</param>
+    /// <param name="b">loop position end, in ms. -1, INT64_MAX or numeric_limit&lt;int64_t>::max() indicates b is the end of media</param>
     public void SetRange(long a, long b = long.MaxValue)
     {
         unsafe
@@ -837,6 +1124,13 @@ public class MDKPlayer : IDisposable
     }
 
     public delegate double CallBackOnSync();
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="cb">a callback invoked when about to render a frame. return expected current playback position(seconds), e.g. DBL_MAX(TimestampEOS) indicates render video frame ASAP.
+    /// sync callback clock should handle pause, resume, seek and seek finish events</param>
+    /// <param name="minInterval"></param>
+    /// <returns></returns>
     public MDKPlayer OnSync(CallBackOnSync cb, int minInterval = 10)
     {
         sync_cb_ = cb;
@@ -859,6 +1153,14 @@ public class MDKPlayer : IDisposable
     }
 
     public delegate int CallBackOnFrame(VideoFrame frame, int track);
+    /// <summary>
+    /// A callback to be invoked before delivering a frame to renderers. Frame can be VideoFrame and AudioFrame(NOT IMPLEMENTED).<br/>
+    /// The callback can be used as a filter.<br/>
+    /// TODO: frames not in host memory<br/>
+    /// For most filters, 1 input frame generates 1 output frame, then return 0.
+    /// </summary>
+    /// <param name="cb">callback to be invoked. returns pending number of frames. callback parameter is input and output frame. if input frame is an invalid frame, output a pending frame.</param>
+    /// <returns></returns>
     public MDKPlayer OnFrame(CallBackOnFrame cb)
     {
         unsafe

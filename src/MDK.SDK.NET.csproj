@@ -7,7 +7,9 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Version>0.0.1</Version>
     <PackageId>MDK.SDK.NET</PackageId>
+    <Authors>Axojhf</Authors>
     <RepositoryUrl>https://github.com/axojhf/MDK.SDK.NET</RepositoryUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 </Project>
