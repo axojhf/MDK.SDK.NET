@@ -2,6 +2,28 @@ using System.Runtime.InteropServices;
 
 namespace MDK.SDK.NET.Gen
 {
+    internal unsafe partial struct mdkDX11Resource
+    {
+        public int size;
+
+        [NativeTypeName("ID3D11DeviceChild *")]
+        public void* resource;
+
+        public int subResource;
+    }
+
+    internal unsafe partial struct mdkDX9Resource
+    {
+        public int size;
+
+        [NativeTypeName("IDirect3DSurface9 *")]
+        public void* surface;
+    }
+
+    internal partial struct mdkVideoBufferPool
+    {
+    }
+
     internal partial struct mdkVideoFrame
     {
     }
@@ -77,49 +99,51 @@ namespace MDK.SDK.NET.Gen
         internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, MDK_PixelFormat, int, int, mdkVideoFrameAPI*> to;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, const char *, const char *, float)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, IntPtr, IntPtr, float, byte> save;
+        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, sbyte*, sbyte*, float, byte> save;
 
         [NativeTypeName("struct mdkVideoFrameAPI *(*)(struct mdkVideoFrame *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoFrameAPI*> toHost;
+        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoFrameAPI*> onDestroy;
 
-        [NativeTypeName("struct mdkVideoFrameAPI *(*)()")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*> fromGL;
+        [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkDX11Resource *, int, int)")]
+        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkDX11Resource*, int, int, byte> fromDX11;
 
-        [NativeTypeName("struct mdkVideoFrameAPI *(*)()")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*> fromMetal;
+        [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkDX9Resource *, int, int)")]
+        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkDX9Resource*, int, int, byte> fromDX9;
 
-        [NativeTypeName("struct mdkVideoFrameAPI *(*)()")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*> fromVk;
+        [NativeTypeName("bool (*)()")]
+        internal delegate* unmanaged[Cdecl]<byte> fromDX12;
 
-        [NativeTypeName("struct mdkVideoFrameAPI *(*)()")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*> fromD3D9;
+        [NativeTypeName("bool (*)()")]
+        internal delegate* unmanaged[Cdecl]<byte> fromMetal;
 
-        [NativeTypeName("struct mdkVideoFrameAPI *(*)()")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*> fromD3D11;
+        [NativeTypeName("bool (*)()")]
+        internal delegate* unmanaged[Cdecl]<byte> fromVk;
 
-        [NativeTypeName("struct mdkVideoFrameAPI *(*)()")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*> fromD3D12;
+        [NativeTypeName("bool (*)()")]
+        internal delegate* unmanaged[Cdecl]<byte> fromGL;
 
-        [NativeTypeName("void *[13]")]
+        [NativeTypeName("bool (*)(struct mdkVideoFrame *)")]
+        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte> toHost;
+
+        [NativeTypeName("void *[12]")]
         internal _reserved_e__FixedBuffer reserved;
 
         internal unsafe partial struct _reserved_e__FixedBuffer
         {
-            internal void* e0;
-            internal void* e1;
-            internal void* e2;
-            internal void* e3;
-            internal void* e4;
-            internal void* e5;
-            internal void* e6;
-            internal void* e7;
-            internal void* e8;
-            internal void* e9;
-            internal void* e10;
-            internal void* e11;
-            internal void* e12;
+            public void* e0;
+            public void* e1;
+            public void* e2;
+            public void* e3;
+            public void* e4;
+            public void* e5;
+            public void* e6;
+            public void* e7;
+            public void* e8;
+            public void* e9;
+            public void* e10;
+            public void* e11;
 
-            internal ref void* this[int index]
+            public ref void* this[int index]
             {
                 get
                 {
@@ -136,11 +160,15 @@ namespace MDK.SDK.NET.Gen
     internal static unsafe partial class Methods
     {
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial mdkVideoFrameAPI* mdkVideoFrameAPI_new(int width, int height, [NativeTypeName("enum MDK_PixelFormat")] MDK_PixelFormat format);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void mdkVideoFrameAPI_delete([NativeTypeName("struct mdkVideoFrameAPI **")] mdkVideoFrameAPI** param0);
+
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        public static partial void mdkVideoBufferPoolFree(mdkVideoBufferPool** pool);
     }
 }

@@ -188,7 +188,7 @@ public class VideoFrame : IDisposable
         unsafe
         {
             IntPtr _filename = Marshal.StringToCoTaskMemUTF8(fileName), _format = Marshal.StringToCoTaskMemUTF8(format);
-            var ret = Convert.ToBoolean(p->save(p->@object, _filename, _format, quality));
+            var ret = Convert.ToBoolean(p->save(p->@object, (sbyte*)_filename, (sbyte*)_format, quality));
             Marshal.FreeCoTaskMem(_filename);
             Marshal.FreeCoTaskMem(_format);
             return ret;
