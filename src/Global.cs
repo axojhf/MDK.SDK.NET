@@ -262,7 +262,7 @@ public enum PixelFormat
 /// <summary>
 ///events:
 ///<para>
-///{timestamp(ms), "render.video", "1st_frame"}: when the first frame is rendered<br/>
+///{timestamp(ms), "render.video", "1st_frame"}: when the first frame is rendered. requires setVideoSurface() called with a valid size<br/>
 ///{error, "decoder.audio/video/subtitle", "open", stream}: decoder of a stream is open, or failed to open if error != 0. TODO: do not use "open" ?<br/>
 ///{ 0, "decoder.video", decoderName, stream}: decoder of a stream is open or changed<br/>
 ///{0, "decoder.audio", decoderName, stream}: decoder of a stream is open or changed<br/>
@@ -381,7 +381,10 @@ public class Global
     /// - "ffmpeg.cpuflags": cpu flags for ffmpeg<br/>
     /// - "logLevel" or "log": can be "Off", "Error", "Warning", "Info", "Debug", "All". same as SetGlobalOption("logLevel", int(LogLevel))<br/>
     /// - "profiler.gpu": "0" or "1"<br/>
-    /// - "R3DSDK_DIR": R3D dlls dir. default dir is working dir
+    /// - "R3DSDK_DIR": R3D dlls dir. default dir is working dir<br/>
+    /// - "subtitle.fonts.dir": extra fonts dir for subtitle renderer<br/>
+    /// - "subtitle.fonts.file": default subtitle font as fallback.can be an asset path for android<br/>
+    /// - "subtitle.fonts.family": default subtitle font family as fallback
     /// </param>
     /// <param name="value"></param>
     public static void SetGlobalOption(string key, string value)
