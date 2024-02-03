@@ -532,7 +532,7 @@ public class MDKPlayer : IDisposable
     /// <para>"cc": "0" or "1"(default). enable closed caption decoding and rendering.</para>
     /// <para>"subtitle": "0" or "1"(default). enable subtitle(including cc) rendering. setActiveTracks(MediaType::Subtitle, {...}) enables decoding only.</para>
     /// <para>"avformat.some_name": avformat option, e.g. {"avformat.fpsprobesize": "0"}. if global option "demuxer.io=0", it also can be AVIOContext/URLProtocol option</para>
-    /// <para>"avio.some_name": AVIOContext/URLProtocol option, e.g. "avio.user_agent"</para>
+    /// <para>"avio.some_name": AVIOContext/URLProtocol option, e.g. avio.user_agent for UA, avio.headers for http headers.</para>
     /// <para>"avcodec.some_name": AVCodecContext option, will apply for all FFmpeg based video/audio/subtitle decoders. To set for a single decoder, use setDecoders() with options</para>
     /// <para>"audio.decoder": audio decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
     /// <para>"video.decoder": video decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>

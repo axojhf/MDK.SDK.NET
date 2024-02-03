@@ -11,5 +11,5 @@
     <RepositoryUrl>https://github.com/axojhf/MDK.SDK.NET</RepositoryUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
+  
 </Project>
