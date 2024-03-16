@@ -167,9 +167,9 @@ public class VideoFrame : IDisposable
     /// <param name="width">Output width. If invalid(&lt;=0), same as width().</param>
     /// <param name="height">Output height. If invalid(&lt;=0), same as height().</param>
     /// <returns>Converted video frame.</returns>
-    public unsafe VideoFrame To(PixelFormat format, int width = -1, int height = -1)
+    public VideoFrame To(PixelFormat format, int width = -1, int height = -1)
     {
-        return new VideoFrame(p->to(p->@object, (MDK_PixelFormat)((int)format - 1), width, height));
+        unsafe { return new VideoFrame(p->to(p->@object, (MDK_PixelFormat)((int)format - 1), width, height)); }
     }
 
     /// <summary>
