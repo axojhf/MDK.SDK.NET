@@ -395,6 +395,9 @@ public struct VulkanRenderAPI
         set { unsafe { internalAPI.rt = (void*)value; } }
     }
 
+    /// <summary>
+    /// optional. If null(usually for offscreen rendering), final image layout is VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL/VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR
+    /// </summary>
     public IntPtr RenderPass
     {
         get { unsafe { return (nint)internalAPI.render_pass; } }
@@ -562,7 +565,7 @@ public struct VulkanRenderAPI
             internalAPI.present_family = -1;
             internalAPI.debug = 0;
             internalAPI.buffers = 2;
-            internalAPI.device_index = -1;
+            internalAPI.device_index = 0;
             internalAPI.max_version = 0;
             internalAPI.gfx_queue_index = 0;
             internalAPI.transfer_queue_index = -1;

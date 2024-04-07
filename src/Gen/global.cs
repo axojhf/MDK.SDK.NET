@@ -239,8 +239,8 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("#define MDK_MAJOR 0")]
         internal const int MDK_MAJOR = 0;
 
-        [NativeTypeName("#define MDK_MINOR 25")]
-        internal const int MDK_MINOR = 25;
+        [NativeTypeName("#define MDK_MINOR 26")]
+        internal const int MDK_MINOR = 26;
 
         [NativeTypeName("#define MDK_MICRO 0")]
         internal const int MDK_MICRO = 0;

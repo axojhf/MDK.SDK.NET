@@ -272,7 +272,9 @@ public enum PixelFormat
 ///{progress 0~100, "reader.buffering"}: error is buffering progress<br/>
 ///{ 0 / 1, "thread.audio/video/subtitle", stream}: decoder thread is started (error = 1) and about to exit(error = 0)<br/>
 ///{error, "snapshot", saved_file if no error and error string if error &lt; 0}<br/>
-///{ 0, "cc"}: the 1st closed caption data is decoded. can be used in ui to show CC button.
+///{ 0, "cc"}: the 1st closed caption data is decoded. can be used in ui to show CC button.<br/>
+///{0, "metadata"}: metadata update. new metadata can be read from Player.mediaInfo().metadata<br/>
+///TODO: video.thread, video.decoder, video.render<br/>
 ///</para>
 /// </summary>
 public class MediaEvent
@@ -373,7 +375,7 @@ public class Global
     /// </summary>
     /// <param name="key">
     /// - "avutil_lib", "avcodec_lib", "avformat_lib", "swresample_lib", "avfilter_lib": path to ffmpeg runtime libraries<br/>
-    /// - "plugins_dir": plugins directory.MUST set before "plugins" if not in default dirs<br/>
+    /// - "plugins_dir", "plugins.dir": plugins directory.MUST set before "plugins" if not in default dirs<br/>
     /// - "plugins": plugin filenames or paths in pattern "p1:p2:p3"<br/>
     /// - "MDK_KEY": license key for your product<br/>
     /// - "MDK_KEY_CODE_PAGE": license key code page used internally(windows only)<br/>
@@ -430,7 +432,8 @@ public class Global
     /// "jvm", "JavaVM": JavaVM*. android only. Required if not loaded by System.loadLibrary()<br/>
     /// "X11Display": Display*<br/>
     /// "DRMDevice": drm device path, for vaapi<br/>
-    /// "DRMFd": drm fd, for vaapi
+    /// "DRMFd": drm fd, for vaapi<br/>
+    /// "d3d11.device": ID3D11Device*, global d3d11 device used by decoders and renderers. if value is 1, create an internal device as global device(same decoder and renderer device may results in lower fps, e.g. amd gpu)
     /// </param>
     /// <param name="value"></param>
     public static void SetGlobalOption(string key, IntPtr value)
