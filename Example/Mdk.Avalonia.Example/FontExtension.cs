@@ -9,9 +9,9 @@ internal static class FontExtension
     {
         return builder.With(new FontManagerOptions
         {
-            DefaultFamilyName = "微软雅黑",
-            FontFallbacks = new[]
-            {
+            DefaultFamilyName = "Microsoft YaHei",
+            FontFallbacks =
+            [
                 new FontFallback
                 {
                     FontFamily = new FontFamily("Segoe UI")
@@ -20,7 +20,7 @@ internal static class FontExtension
                 {
                     FontFamily = new FontFamily("WenQuanYi Micro Hei")
                 }
-            }
+            ]
         });
     }
 }
