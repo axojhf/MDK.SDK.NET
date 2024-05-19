@@ -430,6 +430,7 @@ public class Global
     /// </summary>
     /// <param name="key">
     /// "jvm", "JavaVM": JavaVM*. android only. Required if not loaded by System.loadLibrary()<br/>
+    /// "android.app.Application" or "android.content.Context": jobject. android only. automatically set when setting JavaVM.<br/>
     /// "X11Display": Display*<br/>
     /// "DRMDevice": drm device path, for vaapi<br/>
     /// "DRMFd": drm fd, for vaapi<br/>

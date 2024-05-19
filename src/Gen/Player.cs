@@ -213,8 +213,8 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, void> showSurface;
 
-        [NativeTypeName("void (*)()")]
-        internal delegate* unmanaged[Cdecl]<void> getVideoFrame;
+        [NativeTypeName("void (*)(struct mdkPlayer* p, struct mdkVideoFrameAPI* frame, void* vo_opaque)")]
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkVideoFrameAPI*, void*, void> getVideoFrame;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, int, int, void *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, int, int, void*, void> setVideoSurfaceSize;
