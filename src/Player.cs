@@ -16,24 +16,39 @@ public class MDKPlayer : IDisposable
     private bool mute_ = false;
     private float volume_ = 1.0f;
     private CallbackCurrentMediaChanged? current_cb_ = null;
+    readonly object current_mtx_ = new();
     private CallBackOnTimeout? timeout_cb_ = null;
+    readonly object timeout_mtx_ = new();
     private CallBackOnPrepare? prepare_cb_ = null;
     private CallBackOnStateChanged? state_cb_ = null;
-    private CallBackOnMediaStatus? status_cb_ = null;
+    readonly object state_mtx_ = new();
     private CallBackOnRender? render_cb_ = null;
+    readonly object render_mtx_ = new();
     private CallBackOnSeek? seek_cb_ = null;
     private CallBackOnSwitchBitrate? switch_cb_ = null;
+    readonly object switch_mtx_ = new();
     private CallBackOnSnapshot? snapshot_cb_ = null;
     private CallBackOnFrame? video_cb_ = null;
+    readonly object video_mtx_ = new();
     private CallBackOnSync? sync_cb_ = null;
+    readonly object sync_mtx_ = new();
     private Dictionary<CallbackToken, CallBackOnEvent> event_cb_ = [];
     private Dictionary<CallbackToken, CallbackToken> event_cb_key_ = [];
+    readonly object event_mtx_ = new();
     private Dictionary<CallbackToken, CallBackOnLoop> loop_cb_ = [];
     private Dictionary<CallbackToken, CallbackToken> loop_cb_key_ = [];
+    readonly object loop_mtx_ = new();
+    private Dictionary<CallbackToken, CallBackOnMediaStatus> status_cb_ = [];
+    private Dictionary<CallbackToken, CallbackToken> status_cb_key_ = [];
+    readonly object status_mtx_ = new();
     private MediaInfo info_;
 
     private static CallbackToken onEvent_k = 1;
     private static CallbackToken onLoop_k = 1;
+    private static CallbackToken onStatus_k = 1;
+
+    private GCHandle handle;
+    private readonly IntPtr this_ptr;
 
     /// <summary>
     /// Initializes a new instance of MDK player.
@@ -45,6 +60,9 @@ public class MDKPlayer : IDisposable
             p = Methods.mdkPlayerAPI_new();
         }
         owner_ = true;
+        // get pinned this pointer
+        handle = GCHandle.Alloc(this, GCHandleType.Pinned);
+        this_ptr = handle.AddrOfPinnedObject();
     }
 
     /// <summary>
@@ -198,18 +216,26 @@ public class MDKPlayer : IDisposable
     /// <param name="cb"></param>
     public void CurrentMediaChanged(CallbackCurrentMediaChanged cb)
     {
-        current_cb_ = cb;
+        lock (current_mtx_)
+        {
+            current_cb_ = cb;
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void temp(void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallbackCurrentMediaChanged>((nint)opaque)();
+                //将opaque转换为Player对象
+                MDKPlayer player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.current_mtx_)
+                {
+                    player.current_cb_?.Invoke();
+                }
             }
             mdkCurrentMediaChangedCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(current_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(current_cb_)),
+                opaque = (void*)(current_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             p->currentMediaChanged(p->@object, callback);
         }
@@ -289,18 +315,27 @@ public class MDKPlayer : IDisposable
     /// <param name="cb"></param>
     public void SetTimeout(long ms, CallBackOnTimeout cb)
     {
-        unsafe
+        lock (timeout_mtx_)
         {
             timeout_cb_ = cb;
+        }
+        unsafe
+        {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static byte temp(long ms, void* opaque)
             {
-                return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnTimeout>((nint)opaque)(ms) ? 1 : 0);
+                var player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.timeout_mtx_)
+                {
+                    if (player.timeout_cb_ != null)
+                        return (byte)(player.timeout_cb_(ms) ? 1 : 0);
+                }
+                return 0;
             }
             mdkTimeoutCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(timeout_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(timeout_cb_)),
+                opaque = (void*)(timeout_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             p->setTimeout(p->@object, ms, callback);
         }
@@ -396,18 +431,25 @@ public class MDKPlayer : IDisposable
     public delegate void CallBackOnStateChanged(State a);
     public MDKPlayer OnStateChanged(CallBackOnStateChanged cb)
     {
-        state_cb_ = cb;
+        lock (state_mtx_)
+        {
+            state_cb_ = cb;
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void temp(MDK_State value, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnStateChanged>((nint)opaque)((State)value);
+                var player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.state_mtx_)
+                {
+                    player.state_cb_?.Invoke((State)value);
+                }
             }
             mdkStateChangedCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(state_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(state_cb_)),
+                opaque = (void*)(state_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             p->onStateChanged(p->@object, callback);
         }
@@ -436,20 +478,49 @@ public class MDKPlayer : IDisposable
     public delegate bool CallBackOnMediaStatus(MediaStatus old, MediaStatus @new);
     public MDKPlayer OnMediaStatus(CallBackOnMediaStatus cb, IntPtr token = 0)
     {
-        status_cb_ = cb;
         unsafe
         {
-            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static byte temp(MDK_MediaStatus old, MDK_MediaStatus value, void* opaque)
+            lock (status_mtx_)
             {
-                return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnMediaStatus>((nint)opaque)((MediaStatus)old, (MediaStatus)value) ? 1 : 0);
+                mdkMediaStatusCallback callback = new();
+                if (cb == null)
+                {
+                    p->onMediaStatus(p->@object, callback, (ulong*)(token != IntPtr.Zero ? loop_cb_key_[*(ulong*)token] : 0));
+                    if (token != IntPtr.Zero)
+                    {
+                        status_cb_.Remove(*(ulong*)token);
+                        status_cb_key_.Remove(*(ulong*)token);
+                    }
+                    else
+                    {
+                        status_cb_.Clear();
+                        status_cb_key_.Clear();
+                    }
+                }
+                else
+                {
+                    status_cb_[onStatus_k] = cb;
+                    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                    static byte temp(MDK_MediaStatus old, MDK_MediaStatus value, void* opaque)
+                    {
+                        return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnMediaStatus>((nint)opaque)((MediaStatus)old, (MediaStatus)value) ? 1 : 0);
+                    }
+                    callback = new()
+                    {
+                        cb = &temp,
+                        opaque = (void*)Marshal.GetFunctionPointerForDelegate(status_cb_[onStatus_k]),
+                    };
+                    CallbackToken t = 0;
+                    p->onMediaStatus(p->@object, callback, (ulong*)token);
+                    status_cb_key_[onStatus_k] = t;
+                    if (token != 0)
+                    {
+                        *(ulong*)token = t;
+                    }
+                    onStatus_k++;
+                }
+
             }
-            mdkMediaStatusCallback callback = new()
-            {
-                cb = &temp,
-                opaque = (void*)(status_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(status_cb_)),
-            };
-            p->onMediaStatus(p->@object, callback, (ulong*)token);
         }
         return this;
     }
@@ -759,7 +830,7 @@ public class MDKPlayer : IDisposable
     /// </summary>
     /// <param name="effect"></param>
     /// <param name="value">
-    /// <para>invalid (ColorSpaceUnknown): renderer will try to use the value of decoded frame, and will send hdr10 metadata when possible. i.e. hdr videos will enable hdr display. Currently only supported by metal, and `MetalRenderAPI.layer` must be a `CAMetalLayer` ([example](https://github.com/wang-bin/mdkSwift/blob/master/Player.swift#L184))</para>
+    /// <para>invalid (ColorSpaceUnknown): renderer will try to use the value of decoded frame, and will send hdr10 metadata when possible. i.e. hdr videos will enable hdr display. Currently only supported by metal, and `MetalRenderAPI.layer` must be a `CAMetalLayer` ([example](https://github.com/wang-bin/swift-mdk/blob/master/Player.swift#L184))</para>
     /// <para>hdr colorspace(ColorSpaceBT2100_PQ): no hdr metadata will be sent to the display, sdr will map to hdr.Can be used by the gui toolkits which support hdr swapchain but no api to change swapchain colorspace and format on the fly, see[Qt example] (https://github.com/wang-bin/mdk-examples/blob/master/Qt/qmlrhi/VideoTextureNodePub.cpp#L83)</para>
     /// <para>sdr color space(ColorSpaceBT709) : the default. HDR videos will tone map to SDR.</para>
     /// </param>
@@ -783,18 +854,25 @@ public class MDKPlayer : IDisposable
     /// <param name="cb"></param>
     public void SetRenderCallback(CallBackOnRender cb)
     {
-        render_cb_ = cb;
+        lock (render_mtx_)
+        {
+            render_cb_ = cb;
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void temp(void* vo_opaque, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnRender>((nint)opaque)((IntPtr)vo_opaque);
+                var player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.render_mtx_)
+                {
+                    player.render_cb_?.Invoke((IntPtr)vo_opaque);
+                }
             }
             mdkRenderCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(render_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(render_cb_)),
+                opaque = (void*)(render_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             p->setRenderCallback(p->@object, callback);
         }
@@ -917,18 +995,26 @@ public class MDKPlayer : IDisposable
     /// <param name="cb">(true/false) called when finished/failed</param>
     public void SwitchBitrate(string url, long delay = -1, CallBackOnSwitchBitrate? cb = null)
     {
-        switch_cb_ = cb;
+        lock (switch_mtx_)
+        {
+            switch_cb_ = cb;
+        }
+
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void temp(byte value, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnSwitchBitrate>((nint)opaque)(value != 0);
+                var player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.switch_mtx_)
+                {
+                    player.switch_cb_?.Invoke(value != 0);
+                }
             }
             SwitchBitrateCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(switch_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(switch_cb_)),
+                opaque = (void*)(switch_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             var _url = Marshal.StringToCoTaskMemUTF8(url);
             p->switchBitrate(p->@object, _url, delay, callback);
@@ -978,51 +1064,54 @@ public class MDKPlayer : IDisposable
         unsafe
         {
             mdkMediaEventCallback callback = new();
-            if (cb == null)
+            lock (event_mtx_)
             {
-                p->onEvent(p->@object, callback, (ulong*)(token != IntPtr.Zero ? event_cb_key_[*(ulong*)token] : 0));
-                if (token != IntPtr.Zero)
+                if (cb == null)
                 {
-                    event_cb_.Remove(*(ulong*)token);
-                    event_cb_key_.Remove(*(ulong*)token);
+                    p->onEvent(p->@object, callback, (ulong*)(token != IntPtr.Zero ? event_cb_key_[*(ulong*)token] : 0));
+                    if (token != IntPtr.Zero)
+                    {
+                        event_cb_.Remove(*(ulong*)token);
+                        event_cb_key_.Remove(*(ulong*)token);
+                    }
+                    else
+                    {
+                        event_cb_.Clear();
+                        event_cb_key_.Clear();
+                    }
                 }
                 else
                 {
-                    event_cb_.Clear();
-                    event_cb_key_.Clear();
-                }
-            }
-            else
-            {
-                event_cb_[onEvent_k] = cb;
-                [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-                static byte temp(mdkMediaEvent* me, void* opaque)
-                {
-                    var f = Marshal.GetDelegateForFunctionPointer<CallBackOnEvent>((nint)opaque);
-                    MediaEvent e = new()
+                    event_cb_[onEvent_k] = cb;
+                    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                    static byte temp(mdkMediaEvent* me, void* opaque)
                     {
-                        Error = me->error,
-                        Category = Marshal.PtrToStringUTF8((nint)me->category) ?? "",
-                        Detail = Marshal.PtrToStringUTF8((nint)me->detail) ?? "",
-                        Stream = me->decoder.stream,
-                        VideoHeight = me->video.height,
-                        VideoWidth = me->video.width,
+                        var f = Marshal.GetDelegateForFunctionPointer<CallBackOnEvent>((nint)opaque);
+                        MediaEvent e = new()
+                        {
+                            Error = me->error,
+                            Category = Marshal.PtrToStringUTF8((nint)me->category) ?? "",
+                            Detail = Marshal.PtrToStringUTF8((nint)me->detail) ?? "",
+                            Stream = me->decoder.stream,
+                            VideoHeight = me->video.height,
+                            VideoWidth = me->video.width,
+                        };
+                        return (byte)(f(e) ? 1 : 0);
+                    }
+                    callback = new()
+                    {
+                        cb = &temp,
+                        opaque = (void*)Marshal.GetFunctionPointerForDelegate(event_cb_[onEvent_k]),
                     };
-                    return (byte)(f(e) ? 1 : 0);
+                    CallbackToken t = 0;
+                    p->onEvent(p->@object, callback, (ulong*)t);
+                    event_cb_key_[onEvent_k] = t;
+                    if (token != IntPtr.Zero)
+                    {
+                        *(ulong*)token = t;
+                    }
+                    onEvent_k++;
                 }
-                callback = new()
-                {
-                    cb = &temp,
-                    opaque = (void*)Marshal.GetFunctionPointerForDelegate(event_cb_[onEvent_k]),
-                };
-                CallbackToken t = 0;
-                p->onEvent(p->@object, callback, (ulong*)t);
-                event_cb_key_[onEvent_k] = t;
-                if (token != IntPtr.Zero)
-                {
-                    *(ulong*)token = t;
-                }
-                onEvent_k++;
             }
         }
         return this;
@@ -1070,41 +1159,44 @@ public class MDKPlayer : IDisposable
         unsafe
         {
             mdkLoopCallback callback = new();
-            if (cb == null)
+            lock (loop_mtx_)
             {
-                p->onLoop(p->@object, callback, (ulong*)(token != IntPtr.Zero ? loop_cb_key_[*(ulong*)token] : 0));
-                if (token != IntPtr.Zero)
+                if (cb == null)
                 {
-                    loop_cb_.Remove(*(ulong*)token);
-                    loop_cb_key_.Remove(*(ulong*)token);
+                    p->onLoop(p->@object, callback, (ulong*)(token != IntPtr.Zero ? loop_cb_key_[*(ulong*)token] : 0));
+                    if (token != IntPtr.Zero)
+                    {
+                        loop_cb_.Remove(*(ulong*)token);
+                        loop_cb_key_.Remove(*(ulong*)token);
+                    }
+                    else
+                    {
+                        loop_cb_.Clear();
+                        loop_cb_key_.Clear();
+                    }
                 }
                 else
                 {
-                    loop_cb_.Clear();
-                    loop_cb_key_.Clear();
+                    loop_cb_[onLoop_k] = cb;
+                    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                    static void temp(int count, void* opaque)
+                    {
+                        Marshal.GetDelegateForFunctionPointer<CallBackOnLoop>((nint)opaque)(count);
+                    }
+                    callback = new()
+                    {
+                        cb = &temp,
+                        opaque = (void*)Marshal.GetFunctionPointerForDelegate(loop_cb_[onLoop_k]),
+                    };
+                    CallbackToken t = 0;
+                    p->onLoop(p->@object, callback, (ulong*)t);
+                    loop_cb_key_[onLoop_k] = t;
+                    if (token != IntPtr.Zero)
+                    {
+                        *(ulong*)token = t;
+                    }
+                    onLoop_k++;
                 }
-            }
-            else
-            {
-                loop_cb_[onLoop_k] = cb;
-                [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-                static void temp(int count, void* opaque)
-                {
-                    Marshal.GetDelegateForFunctionPointer<CallBackOnLoop>((nint)opaque)(count);
-                }
-                callback = new()
-                {
-                    cb = &temp,
-                    opaque = (void*)Marshal.GetFunctionPointerForDelegate(loop_cb_[onLoop_k]),
-                };
-                CallbackToken t = 0;
-                p->onLoop(p->@object, callback, (ulong*)t);
-                loop_cb_key_[onLoop_k] = t;
-                if (token != IntPtr.Zero)
-                {
-                    *(ulong*)token = t;
-                }
-                onLoop_k++;
             }
         }
         return this;
@@ -1133,19 +1225,25 @@ public class MDKPlayer : IDisposable
     /// <returns></returns>
     public MDKPlayer OnSync(CallBackOnSync cb, int minInterval = 10)
     {
-        sync_cb_ = cb;
+        lock (sync_mtx_)
+        {
+            sync_cb_ = cb;
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static double temp(void* opaque)
             {
-                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnSync>((nint)opaque);
-                return f();
+                var player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.sync_mtx_)
+                {
+                    return player.sync_cb_?.Invoke() ?? 0;
+                }
             }
             mdkSyncCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(sync_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(sync_cb_)),
+                opaque = (void*)(sync_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             p->onSync(p->@object, callback, minInterval);
         }
@@ -1165,21 +1263,27 @@ public class MDKPlayer : IDisposable
     {
         unsafe
         {
-            video_cb_ = cb;
+            lock (video_mtx_)
+            {
+                video_cb_ = cb;
+            }
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static int temp(mdkVideoFrameAPI** pFrame, int track, void* opaque)
             {
-                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnFrame>((nint)opaque);
-                VideoFrame frame = new(null);
-                frame.Attach(*pFrame);
-                var pendings = f(frame, track);
-                *pFrame = frame.Detach();
-                return pendings;
+                var player = (MDKPlayer)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+                lock (player.video_mtx_)
+                {
+                    VideoFrame frame = new(null);
+                    frame.Attach(*pFrame);
+                    var pendings = player.video_cb_(frame, track);
+                    *pFrame = frame.Detach();
+                    return pendings;
+                }
             }
             mdkVideoCallback callback = new()
             {
                 cb = &temp,
-                opaque = (void*)(video_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(video_cb_)),
+                opaque = (void*)(video_cb_ == null ? IntPtr.Zero : this_ptr),
             };
             p->onVideo(p->@object, callback);
         }
