@@ -299,7 +299,7 @@ public struct MetalRenderAPI
     }
 
     /// <summary>
-    /// optional. usually for on screen rendering. return id<MTLTexture>.
+    /// optional. usually for on screen rendering. return id MTLTexture .
     /// </summary>
     public IntPtr CurrentRenderTarget
     {
@@ -319,12 +319,33 @@ public struct MetalRenderAPI
     }
 
     /// <summary>
+    /// Get current MTLRenderCommandEncoder and MTLCommandBuffer. required if texture and currentRenderTarget are null. useful in an foreign render pass
+    /// </summary>
+    public IntPtr CurrentCommand
+    {
+        get { unsafe { return (nint)internalAPI.currentCommand; } }
+        set { unsafe { internalAPI.currentCommand = (delegate* unmanaged[Cdecl]<void**, void**, void*, void>)value; } }
+    }
+
+    /// <summary>
     ///  -1 will use system default device. callback with index+name?
     /// </summary>
     public int DeviceIndex
     {
         get { unsafe { return internalAPI.device_index; } }
         set { unsafe { internalAPI.device_index = value; } }
+    }
+
+    uint ColorFormat
+    {
+        get { unsafe { return internalAPI.colorFormat; } }
+        set { unsafe { internalAPI.colorFormat = value; } }
+    }
+
+    uint DepthStencilFormat
+    {
+        get { unsafe { return internalAPI.depthStencilFormat; } }
+        set { unsafe { internalAPI.depthStencilFormat = value; } }
     }
 
     private mdkMetalRenderAPI internalAPI;
@@ -340,7 +361,10 @@ public struct MetalRenderAPI
             internalAPI.opaque = (void*)0;
             internalAPI.currentRenderTarget = (delegate* unmanaged[Cdecl]<void*, void*>)0;
             internalAPI.layer = (void*)0;
+            internalAPI.currentCommand = (delegate* unmanaged[Cdecl]<void**, void**, void*, void>)0;
             internalAPI.device_index = -1;
+            internalAPI.colorFormat = 0;
+            internalAPI.depthStencilFormat = 0;
         }
     }
 
@@ -597,7 +621,7 @@ struct D3D12RenderAPI
     /// <summary>
     /// optional. will create an internal queue if null.
     /// </summary>
-    internal IntPtr CmdQueue
+    public IntPtr CmdQueue
     {
         get { unsafe { return (nint)internalAPI.cmdQueue; } }
         set { unsafe { internalAPI.cmdQueue = (void*)value; } }
@@ -606,7 +630,7 @@ struct D3D12RenderAPI
     /// <summary>
     /// optional. the render target
     /// </summary>
-    internal IntPtr Rt
+    public IntPtr Rt
     {
         get { unsafe { return (nint)internalAPI.rt; } }
         set { unsafe { internalAPI.rt = (void*)value; } }
@@ -615,16 +639,28 @@ struct D3D12RenderAPI
     /// <summary>
     /// optional
     /// </summary>
-    internal IntPtr RtvHandle
+    public IntPtr RtvHandle
     {
         get { unsafe { return (nint)internalAPI.rtvHandle; } }
         set { unsafe { internalAPI.rtvHandle = (void*)value; } }
     }
 
+    public uint ColorFormat
+    {
+        get { unsafe { return internalAPI.colorFormat; } }
+        set { unsafe { internalAPI.colorFormat = value; } }
+    }
+
+    public uint DepthStencilFormat
+    {
+        get { unsafe { return internalAPI.depthStencilFormat; } }
+        set { unsafe { internalAPI.depthStencilFormat = value; } }
+    }
+
     /// <summary>
     /// optional. callback opaque
     /// </summary>
-    internal IntPtr Opaque
+    public IntPtr Opaque
     {
         get { unsafe { return (nint)internalAPI.opaque; } }
         set { unsafe { internalAPI.opaque = (void*)value; } }
@@ -633,13 +669,20 @@ struct D3D12RenderAPI
     /// <summary>
     /// optional. usually for on screen rendering.
     /// </summary>
-    internal IntPtr CurrentRenderTarget
+    public IntPtr CurrentRenderTarget
     {
         get { unsafe { return (nint)internalAPI.currentRenderTarget; } }
         set { unsafe { internalAPI.currentRenderTarget = (delegate* unmanaged[Cdecl]<void*, uint*, uint*, void*, void*>)value; } }
     }
 
-    internal bool Debug
+    public IntPtr CurrentCommandList
+    {
+        get { unsafe { return (nint)internalAPI.currentCommandList; } }
+        set { unsafe { internalAPI.currentCommandList = (delegate* unmanaged[Cdecl]<void*, void*>)value; } }
+    }
+
+
+    public bool Debug
     {
         get
         {
@@ -655,7 +698,7 @@ struct D3D12RenderAPI
     /// <summary>
     /// must >= 2.
     /// </summary>
-    internal int Buffers
+    public int Buffers
     {
         get { unsafe { return internalAPI.buffers; } }
         set { unsafe { internalAPI.buffers = value; } }
@@ -664,7 +707,7 @@ struct D3D12RenderAPI
     /// <summary>
     /// adapter index
     /// </summary>
-    internal int Adapter
+    public int Adapter
     {
         get { unsafe { return internalAPI.adapter; } }
         set { unsafe { internalAPI.adapter = value; } }
@@ -673,7 +716,7 @@ struct D3D12RenderAPI
     /// <summary>
     /// 0 is the highest
     /// </summary>
-    internal float FeatureLevel
+    public float FeatureLevel
     {
         get { unsafe { return internalAPI.feature_level; } }
         set { unsafe { internalAPI.feature_level = value; } }
@@ -682,7 +725,7 @@ struct D3D12RenderAPI
     /// <summary>
     /// gpu vendor name
     /// </summary>
-    internal IntPtr Vendor
+    public IntPtr Vendor
     {
         get { unsafe { return (nint)internalAPI.vendor; } }
         set { unsafe { internalAPI.vendor = (sbyte*)value; } }
@@ -696,8 +739,11 @@ struct D3D12RenderAPI
             internalAPI.cmdQueue = (void*)0;
             internalAPI.rt = (void*)0;
             internalAPI.rtvHandle = (void*)0;
+            internalAPI.colorFormat = 0; //DXGI_FORMAT_UNKNOWN
+            internalAPI.depthStencilFormat = 0; //DXGI_FORMAT_UNKNOWN
             internalAPI.opaque = (void*)0;
             internalAPI.currentRenderTarget = (delegate* unmanaged[Cdecl]<void*, uint*, uint*, void*, void*>)0;
+            internalAPI.currentCommandList = (delegate* unmanaged[Cdecl]<void*, void*>)0;
             internalAPI.debug = (byte)0;
             internalAPI.buffers = 2;
             internalAPI.adapter = 0;

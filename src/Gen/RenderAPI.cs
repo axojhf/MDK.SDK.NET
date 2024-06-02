@@ -77,26 +77,16 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("const void *")]
         internal void* layer;
 
-        [NativeTypeName("const void *[1]")]
-        internal _reserved_e__FixedBuffer reserved;
+        [NativeTypeName("void (*)(const void **, const void **, const void *)")]
+        internal delegate* unmanaged[Cdecl]<void**, void**, void*, void> currentCommand;
 
         internal int device_index;
 
-        internal unsafe partial struct _reserved_e__FixedBuffer
-        {
-            internal void* e0;
+        [NativeTypeName("unsigned int")]
+        internal uint colorFormat;
 
-            internal ref void* this[int index]
-            {
-                get
-                {
-                    fixed (void** pThis = &e0)
-                    {
-                        return ref pThis[index];
-                    }
-                }
-            }
-        }
+        [NativeTypeName("unsigned int")]
+        internal uint depthStencilFormat;
     }
 
     internal unsafe partial struct mdkVulkanRenderAPI
@@ -243,8 +233,11 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("CpuDescriptorHandle")]
         internal void* rtvHandle;
 
-        [NativeTypeName("void *[2]")]
-        internal _reserved_e__FixedBuffer reserved;
+        [NativeTypeName("DXGI_FORMAT")]
+        internal uint colorFormat;
+
+        [NativeTypeName("DXGI_FORMAT")]
+        internal uint depthStencilFormat;
 
         [NativeTypeName("const void *")]
         internal void* opaque;
@@ -252,7 +245,10 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("ID3D12Resource *(*)(const void *, UINT *, UINT *, D3D12_RESOURCE_STATES *)")]
         internal delegate* unmanaged[Cdecl]<void*, uint*, uint*, void*, void*> currentRenderTarget;
 
-        [NativeTypeName("void *[2]")]
+        [NativeTypeName("ID3D12GraphicsCommandList *(*)(const void *)")]
+        internal delegate* unmanaged[Cdecl]<void*, void*> currentCommandList;
+
+        [NativeTypeName("void *[1]")]
         internal _reserved2_e__FixedBuffer reserved2;
 
         [NativeTypeName("bool")]
@@ -267,29 +263,11 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("const char *")]
         internal sbyte* vendor;
 
-        internal unsafe partial struct _reserved_e__FixedBuffer
-        {
-            internal void* e0;
-            internal void* e1;
-
-            internal ref void* this[int index]
-            {
-                get
-                {
-                    fixed (void** pThis = &e0)
-                    {
-                        return ref pThis[index];
-                    }
-                }
-            }
-        }
-
         internal unsafe partial struct _reserved2_e__FixedBuffer
         {
-            internal void* e0;
-            internal void* e1;
+            public void* e0;
 
-            internal ref void* this[int index]
+            public ref void* this[int index]
             {
                 get
                 {

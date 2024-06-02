@@ -380,7 +380,8 @@ public class MDKPlayer : IDisposable
     /// <summary>
     /// Current MediaInfo. You can call it in prepare() callback which is called when loaded or load failed.<br/>
     /// Some fields can change during playback, e.g.video frame size change(via MediaEvent), live stream duration change, realtime bitrate change.<br/>
-    /// You may get an invalid value if mediaInfo() is called immediately after `set(State::Playing)` or `prepare()` because media is still opening but not loaded , i.e.mediaStatus() has no MediaStatus::Loaded flag.
+    /// You may get an invalid value if mediaInfo() is called immediately after `set(State::Playing)` or `prepare()` because media is still opening but not loaded , i.e.mediaStatus() has no MediaStatus::Loaded flag.<br/>
+    /// A live stream's duration is 0 in prepare() callback or when MediaStatus::Loaded is added, then duration increases current read duration.
     /// </summary>
     public MediaInfo? mediaInfo
     {
@@ -605,10 +606,14 @@ public class MDKPlayer : IDisposable
     /// <para>"avformat.some_name": avformat option, e.g. {"avformat.fpsprobesize": "0"}. if global option "demuxer.io=0", it also can be AVIOContext/URLProtocol option</para>
     /// <para>"avio.some_name": AVIOContext/URLProtocol option, e.g. avio.user_agent for UA, avio.headers for http headers.</para>
     /// <para>"avcodec.some_name": AVCodecContext option, will apply for all FFmpeg based video/audio/subtitle decoders. To set for a single decoder, use setDecoders() with options</para>
+    /// <para>"audio.decoders": decoder list for setDecoders(), with or without decoder properties. "name1,name2:key21=val21"</para>
+    /// <para>"video.decoders": decoder list for setDecoders(), with or without decoder properties. "name1,name2:key21=val21"</para>
     /// <para>"audio.decoder": audio decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
     /// <para>"video.decoder": video decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
     /// <para>"decoder": video and audio decoder property, value is "key=value" or "key1=value1:key2=value2"</para>
     /// <para>"recorder.copyts": "1" or "0"(default), use input packet timestamp, or correct packet timestamp to be continuous.</para>
+    /// <para>"reader.starts_with_key": "0" or "1"(default). if "1", video decoder starts with key-frame, and drop non-key packets before the first decode.</para>
+    /// <para>"buffer" or "buffer.range": parameters setBufferRange(). value is "minMs", "minMs+maxMs", "minMs+maxMs-", "minMs-". the last '-' indicates drop mode</para>
     /// </summary>
     /// <param name="name"></param>
     /// <param name="value"></param>
@@ -702,7 +707,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// scale frame size. x, y can be < 0, means scale and flip.
+    /// scale frame size. x, y can be &lt; 0, means scale and flip.
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>

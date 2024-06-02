@@ -128,8 +128,8 @@ public struct SnapshotRequest
     public IntPtr data = 0;
     /// <summary>
     /// result width of snapshot image set by user, or the same as current frame width if 0. no renderer transform.<br/>
-    /// if both requested width and height are < 0, then result image is scaled image of current frame with ratio=width/height. no renderer transform.<br/>
-    /// if only one of width and height < 0, then the result size is video renderer viewport size, and all transforms will be applied.<br/>
+    /// if both requested width and height are &lt; 0, then result image is scaled image of current frame with ratio=width/height. no renderer transform.<br/>
+    /// if only one of width and height &lt; 0, then the result size is video renderer viewport size, and all transforms will be applied.<br/>
     /// if both width and height == 0, then result size is region of interest size of video frame set by setPointMap(), or video frame size<br/>
     /// </summary>
     public int width = 0;
