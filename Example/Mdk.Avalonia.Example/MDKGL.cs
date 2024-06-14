@@ -46,14 +46,6 @@ internal class Mdkgl : OpenGlControlBase
 
     protected override void OnOpenGlRender(GlInterface gl, int fb)
     {
-        if (_ra.Fbo != fb)
-        {
-            _ra.Fbo = fb;
-            _getProcAddressCallback = (n, o) => { return gl.GetProcAddress(n); };
-            _ra.GetProcAddress = Marshal.GetFunctionPointerForDelegate(_getProcAddressCallback);
-            _player.SetRenderAPI(_ra.GetPtr());
-        }
-
         var pixelSize = GetPixelSize();
         if (pixelSize != _pixelSize)
         {
@@ -69,6 +61,14 @@ internal class Mdkgl : OpenGlControlBase
         var scaling = VisualRoot.RenderScaling;
         return new PixelSize(Math.Max(1, (int) (Bounds.Width * scaling)),
             Math.Max(1, (int) (Bounds.Height * scaling)));
+    }
+
+    protected override void OnOpenGlInit(GlInterface gl)
+    {
+        base.OnOpenGlInit(gl);
+        _getProcAddressCallback = (n, o) => { return gl.GetProcAddress(n); };
+        _ra.GetProcAddress = Marshal.GetFunctionPointerForDelegate(_getProcAddressCallback);
+        _player.SetRenderAPI(_ra.GetPtr());
     }
 
     protected override void OnOpenGlDeinit(GlInterface gl)
