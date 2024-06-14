@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 .idea/
+/src/Properties/launchSettings.json
+/Example/Mdk.Avalonia.Example/Properties/launchSettings.json
