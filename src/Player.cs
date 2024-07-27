@@ -583,7 +583,11 @@ public class MDKPlayer : IDisposable
     /// <para>"decoder": video and audio decoder property, value is "key=value" or "key1=value1:key2=value2"</para>
     /// <para>"recorder.copyts": "1" or "0"(default), use input packet timestamp, or correct packet timestamp to be continuous.</para>
     /// <para>"reader.starts_with_key": "0" or "1"(default). if "1", video decoder starts with key-frame, and drop non-key packets before the first decode.</para>
+    /// <para>"reader.pause": "0"(default) or "1". if "1", will try to pause/resume stream(rtsp) in set(State)</para>
     /// <para>"buffer" or "buffer.range": parameters setBufferRange(). value is "minMs", "minMs+maxMs", "minMs+maxMs-", "minMs-". the last '-' indicates drop mode</para>
+    /// <para>"demux.buffer.ranges": default "0". set a positive integer to enable demuxer's packet cache(if protocol is listed in property "demux.buffer.protocols"), the value is cache ranges count. Cache is useful for network streams, download data only once(if a cache range is not dropped), speedup seeking. Cache ranges are increased by seeking to a uncached position, decreased by merging ranges which are overlapped and LRU algorithm.</para>
+    /// <para>"demux.buffer.protocols": default is "http,https". only these protocols will enable demuxer cache.</para>
+    /// <para>"demux.max_errors": continue to demux the stream if error count is less than this value. same as global option "demuxer.max_errors"</para>
     /// </summary>
     /// <param name="name"></param>
     /// <param name="value"></param>
@@ -907,6 +911,43 @@ public class MDKPlayer : IDisposable
     {
         get { unsafe { return p->playbackRate(p->@object); } }
         set { unsafe { p->setPlaybackRate(p->@object, value); } }
+    }
+
+    /// <summary>
+    ///  time(position) is relative to media start time.<br/>
+    ///  Available if demuxer cache is enabled by property "demux.buffer.ranges" and "demux.buffer.protocols"
+    /// </summary>
+    public List<TimeRange> BufferedRanges
+    {
+        get
+        {
+            unsafe
+            {
+                var block = stackalloc TimeRange[16];
+                var count = p->bufferedTimeRanges(p->@object, (long*)block, 16 * sizeof(TimeRange));
+                if(count > 16)
+                {
+                    block = (TimeRange*)Marshal.AllocHGlobal(Marshal.SizeOf<TimeRange>() * count);
+                    count = p->bufferedTimeRanges(p->@object, (long*)block, count * sizeof(TimeRange));
+                    List<TimeRange> ret = [];
+                    for (int i = 0; i < count; i++)
+                    {
+                        ret.Add(block[i]);
+                    }
+                    Marshal.FreeHGlobal((IntPtr)block);
+                    return ret;
+                }
+                else
+                {
+                    List<TimeRange> ret = [];
+                    for (int i = 0; i < 16; i++)
+                    {
+                        ret.Add(block[i]);
+                    }
+                    return ret;
+                }
+            }
+        }
     }
 
     /// <summary>

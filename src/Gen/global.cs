@@ -66,6 +66,7 @@ namespace MDK.SDK.NET.Gen
         MDK_SeekFlag_FromNow = 1 << 2,
         MDK_SeekFlag_Frame = 1 << 6,
         MDK_SeekFlag_KeyFrame = 1 << 8,
+        MDK_SeekFlag_AnyFrame = 1 << 9,
         MDK_SeekFlag_Fast = MDK_SeekFlag_KeyFrame,
         MDK_SeekFlag_InCache = 1 << 10,
         MDK_SeekFlag_Backward = 1 << 16,
@@ -239,13 +240,13 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("#define MDK_MAJOR 0")]
         internal const int MDK_MAJOR = 0;
 
-        [NativeTypeName("#define MDK_MINOR 28")]
-        internal const int MDK_MINOR = 28;
+        [NativeTypeName("#define MDK_MINOR 29")]
+        internal const int MDK_MINOR = 29;
 
         [NativeTypeName("#define MDK_MICRO 0")]
         internal const int MDK_MICRO = 0;
 
         [NativeTypeName("#define MDK_VERSION MDK_VERSION_INT(MDK_MAJOR, MDK_MINOR, MDK_MICRO)")]
-        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((28 & 0xff) << 8) | (0 & 0xff));
+        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((29 & 0xff) << 8) | (0 & 0xff));
     }
 }

@@ -348,6 +348,9 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, struct mdkVideoFrameAPI *, void *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkVideoFrameAPI*, void*, void> enqueueVideo;
 
+        [NativeTypeName("int (*)(struct mdkPlayer *, int64_t *, int)")]
+        public delegate* unmanaged[Cdecl]<mdkPlayer*, long*, int, int> bufferedTimeRanges;
+
         [UnscopedRef]
         internal ref void* reserved2
         {
@@ -380,16 +383,16 @@ namespace MDK.SDK.NET.Gen
     internal static unsafe partial class Methods
     {
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("const mdkPlayerAPI *")]
         internal static partial mdkPlayerAPI* mdkPlayerAPI_new();
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void mdkPlayerAPI_delete([NativeTypeName("const struct mdkPlayerAPI **")] mdkPlayerAPI** param0);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_foreignGLContextDestroyed();
     }
 }

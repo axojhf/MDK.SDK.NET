@@ -43,6 +43,7 @@ public enum SeekFlag
     /// </summary>
     KeyFrame = 1 << 8,
     Fast = KeyFrame,
+    AnyFrame = 1 << 9,
     /// <summary>
     /// try to seek in memory cache first. useful for speeding up network stream seeking.  Target position must be in range (position(), position() + Player.buffered()]
     /// </summary>
@@ -259,6 +260,15 @@ public enum PixelFormat
     BGRAF32,
 };
 
+public partial struct TimeRange
+{
+    [NativeTypeName("int64_t")]
+    public long start;
+
+    [NativeTypeName("int64_t")]
+    public long end;
+}
+
 /// <summary>
 ///events:
 ///<para>
@@ -274,6 +284,7 @@ public enum PixelFormat
 ///{error, "snapshot", saved_file if no error and error string if error &lt; 0}<br/>
 ///{ 0, "cc"}: the 1st closed caption data is decoded. can be used in ui to show CC button.<br/>
 ///{0, "metadata"}: metadata update. new metadata can be read from Player.mediaInfo().metadata<br/>
+///{count, "cache.ranges"}: buffered time ranges added, dropped or merged. count is ranges count<br/>
 ///TODO: video.thread, video.decoder, video.render<br/>
 ///</para>
 /// </summary>
