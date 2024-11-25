@@ -175,6 +175,22 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// iff media url is "stream:"
+    /// setTimeout can abort current stream playback
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="size"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public bool AppendBuffer(IntPtr data, nuint size, int options = 0)
+    {
+        unsafe
+        {
+            return p->appendBuffer(p->@object, (byte*)data, size, options) != 0;
+        }
+    }
+
     public void SetPreloadImmediately(bool value = true)
     {
         unsafe
@@ -578,10 +594,12 @@ public class MDKPlayer : IDisposable
     /// <para>"avcodec.some_name": AVCodecContext option, will apply for all FFmpeg based video/audio/subtitle decoders. To set for a single decoder, use setDecoders() with options</para>
     /// <para>"audio.decoders": decoder list for setDecoders(), with or without decoder properties. "name1,name2:key21=val21"</para>
     /// <para>"video.decoders": decoder list for setDecoders(), with or without decoder properties. "name1,name2:key21=val21"</para>
-    /// <para>"audio.decoder": audio decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
-    /// <para>"video.decoder": video decoder property, value is "key=value" or "key1=value1:key2=value2". override "decoder" property</para>
-    /// <para>"decoder": video and audio decoder property, value is "key=value" or "key1=value1:key2=value2"</para>
-    /// <para>"recorder.copyts": "1" or "0"(default), use input packet timestamp, or correct packet timestamp to be continuous.</para>
+    /// <para>"audio.decoder": audio decoder properties, value is "key=value" or "key1=value1:key2=value2". override "decoder" properties</para>
+    /// <para>"video.decoder": video decoder properties, value is "key=value" or "key1=value1:key2=value2". override "decoder" properties</para>
+    /// <para>"decoder": video and audio decoder properties, value is "key=value" or "key1=value1:key2=value2"</para>
+    /// <para>"record.copyts", "recorder.copyts": "1" or "0"(default), use input packet timestamp, or correct packet timestamp to be continuous.</para>
+    /// <para>"record.$opt_name": option for recorder's muxer or io, opt_name can also be an ffmpeg option, e.g. "record.avformat.$opt_name" and "record.avio.$opt_name".</para>
+    /// <para>"reader.decoder.$DecoderName": $DecoderName decoder properties, value is "key=value" or "key1=value1:key2=value2". override "decoder" properties</para>
     /// <para>"reader.starts_with_key": "0" or "1"(default). if "1", video decoder starts with key-frame, and drop non-key packets before the first decode.</para>
     /// <para>"reader.pause": "0"(default) or "1". if "1", will try to pause/resume stream(rtsp) in set(State)</para>
     /// <para>"buffer" or "buffer.range": parameters setBufferRange(). value is "minMs", "minMs+maxMs", "minMs+maxMs-", "minMs-". the last '-' indicates drop mode</para>
@@ -925,7 +943,7 @@ public class MDKPlayer : IDisposable
             {
                 var block = stackalloc TimeRange[16];
                 var count = p->bufferedTimeRanges(p->@object, (long*)block, 16 * sizeof(TimeRange));
-                if(count > 16)
+                if (count > 16)
                 {
                     block = (TimeRange*)Marshal.AllocHGlobal(Marshal.SizeOf<TimeRange>() * count);
                     count = p->bufferedTimeRanges(p->@object, (long*)block, count * sizeof(TimeRange));
@@ -1287,7 +1305,7 @@ public class MDKPlayer : IDisposable
             {
                 fixed (mdkPlayerAPI** pp = &p)
                 {
-                    Methods.mdkPlayerAPI_delete(pp);
+                    Methods.mdkPlayerAPI_reset(pp, (byte)(owner_ ? 1 : 0));
                 }
             }
         }

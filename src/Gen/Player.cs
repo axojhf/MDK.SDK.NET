@@ -351,6 +351,9 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("int (*)(struct mdkPlayer *, int64_t *, int)")]
         public delegate* unmanaged[Cdecl]<mdkPlayer*, long*, int, int> bufferedTimeRanges;
 
+        [NativeTypeName("bool (*)(struct mdkPlayer *, const uint8_t *, size_t, int)")]
+        public delegate* unmanaged[Cdecl]<mdkPlayer*, byte*, nuint, int, byte> appendBuffer;
+
         [UnscopedRef]
         internal ref void* reserved2
         {
@@ -390,6 +393,10 @@ namespace MDK.SDK.NET.Gen
         [LibraryImport("mdk")]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void mdkPlayerAPI_delete([NativeTypeName("const struct mdkPlayerAPI **")] mdkPlayerAPI** param0);
+
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        internal static partial void mdkPlayerAPI_reset([NativeTypeName("const struct mdkPlayerAPI **")] mdkPlayerAPI** param0, [NativeTypeName("bool")] byte release);
 
         [LibraryImport("mdk")]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]

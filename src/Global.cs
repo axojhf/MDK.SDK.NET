@@ -382,7 +382,7 @@ public class Global
     }
 
     /// <summary>
-    /// 
+    /// https://github.com/wang-bin/mdk-sdk/wiki/Global-Options
     /// </summary>
     /// <param name="key">
     /// - "avutil_lib", "avcodec_lib", "avformat_lib", "swresample_lib", "avfilter_lib": path to ffmpeg runtime libraries<br/>
