@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using MDK.SDK.NET.Gen;
 using CallbackToken = System.UInt64;
 
@@ -160,9 +161,9 @@ public class MDKPlayer : IDisposable
     {
         unsafe
         {
-            var _url = Marshal.StringToCoTaskMemUTF8(url);
-            p->setMediaForType(p->@object, _url, (MDK_MediaType)type);
-            Marshal.FreeCoTaskMem(_url);
+            var bytes = Encoding.UTF8.GetBytes(url + char.MinValue);
+            fixed (byte* ptr = bytes)
+                p->setMediaForType(p->@object, (nint)ptr, (MDK_MediaType)type);
         }
     }
 
@@ -211,9 +212,9 @@ public class MDKPlayer : IDisposable
     {
         unsafe
         {
-            var _url = Marshal.StringToCoTaskMemUTF8(url);
-            p->setNextMedia(p->@object, _url, startPosition, (MDKSeekFlag)flags);
-            Marshal.FreeCoTaskMem(_url);
+            var bytes = Encoding.UTF8.GetBytes(url + char.MinValue);
+            fixed (byte* ptr = bytes)
+                p->setNextMedia(p->@object, (nint)ptr, startPosition, (MDKSeekFlag)flags);
         }
     }
 
