@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MDK.SDK.NET", "src\MDK.SDK.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mdk.Avalonia.Example", "Example\Mdk.Avalonia.Example\Mdk.Avalonia.Example.csproj", "{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mdk.WinUI3.Example", "Example\Mdk.WinUI3.Example\Mdk.WinUI3.Example.csproj", "{AF982ED3-A2D1-49D1-8497-8542FFF9578A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,12 @@ Global
 		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6EB0EC32-50BB-4BA2-A703-CC8DF62E2286}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF982ED3-A2D1-49D1-8497-8542FFF9578A}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{AF982ED3-A2D1-49D1-8497-8542FFF9578A}.Debug|Any CPU.Build.0 = Debug|x64
+		{AF982ED3-A2D1-49D1-8497-8542FFF9578A}.Debug|Any CPU.Deploy.0 = Debug|x64
+		{AF982ED3-A2D1-49D1-8497-8542FFF9578A}.Release|Any CPU.ActiveCfg = Release|x64
+		{AF982ED3-A2D1-49D1-8497-8542FFF9578A}.Release|Any CPU.Build.0 = Release|x64
+		{AF982ED3-A2D1-49D1-8497-8542FFF9578A}.Release|Any CPU.Deploy.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
