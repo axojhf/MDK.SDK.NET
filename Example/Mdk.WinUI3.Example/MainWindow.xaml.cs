@@ -1,20 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Threading.Tasks;
 using MDK.SDK.NET;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage.Pickers;
 using WinRT;
 
@@ -29,17 +15,13 @@ namespace Mdk.WinUI3.Example
     public sealed partial class MainWindow : Window
     {
         private readonly MDKPlayer _player = new();
-        private D3D11RenderAPI _ra = new();
+        private readonly D3D11RenderAPI _ra = new();
         public MainWindow()
         {
             this.InitializeComponent();
             _player.SetAudioBackends(["OpenAL", "XAudio2"]);
             _player.SetDecoders(MediaType.Video, ["MFT:d3d=11", "hap", "D3D11", "DXVA", "FFmpeg"]);
-            _player.OnMediaStatus((old, @new) =>
-            {
-                if (old == @new || @new != MediaStatus.Loaded) return true;
-                return true;
-            });
+            _player.OnMediaStatus((old, @new) => old == @new || @new != MediaStatus.Loaded || true);
             var vid = ((IWinRTObject)swapChainPanel).NativeObject;
             _player.SetRenderAPI(_ra.GetPtr(), vid.ThisPtr);
             _player.UpdateNativeSurface(vid.ThisPtr);
