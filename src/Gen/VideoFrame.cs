@@ -19,6 +19,25 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("IDirect3DSurface9 *")]
         public void* surface;
     }
+    
+    internal unsafe partial struct mdkVAAPIResource
+    {
+        public int size;
+
+        [NativeTypeName("VASurfaceID")]
+        public uint surface;
+
+        [NativeTypeName("VADisplay")]
+        public void* display;
+
+        public void* x11Display;
+
+        [NativeTypeName("const void *")]
+        public void* opaque;
+
+        [NativeTypeName("void (*)(const void *)")]
+        public delegate* unmanaged[Cdecl]<void*, void> unref;
+    }
 
     internal partial struct mdkVideoBufferPool
     {
@@ -59,76 +78,129 @@ namespace MDK.SDK.NET.Gen
         MDK_PixelFormat_RGBPF32,
         MDK_PixelFormat_BGRAF32,
     }
+    
+    internal unsafe partial struct mdkCUDAResource
+    {
+        public int size;
+
+        [NativeTypeName("void *[4]")]
+        public _ptr_e__FixedBuffer ptr;
+
+        public int width;
+
+        public int height;
+
+        [NativeTypeName("int[4]")]
+        public fixed int stride[4];
+
+        [NativeTypeName("enum MDK_PixelFormat")]
+        public MDK_PixelFormat format;
+
+        public void* context;
+
+        public void* stream;
+
+        [NativeTypeName("const void *")]
+        public void* opaque;
+
+        [NativeTypeName("void (*)(const void *)")]
+        public delegate* unmanaged[Cdecl]<void*, void> unref;
+
+        public unsafe partial struct _ptr_e__FixedBuffer
+        {
+            public void* e0;
+            public void* e1;
+            public void* e2;
+            public void* e3;
+
+            public ref void* this[int index]
+            {
+                get
+                {
+                    fixed (void** pThis = &e0)
+                    {
+                        return ref pThis[index];
+                    }
+                }
+            }
+        }
+    }
 
     internal unsafe partial struct mdkVideoFrameAPI
     {
         [NativeTypeName("struct mdkVideoFrame *")]
-        internal mdkVideoFrame* @object;
+        public mdkVideoFrame* @object;
 
         [NativeTypeName("int (*)(struct mdkVideoFrame *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, int> planeCount;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int> planeCount;
 
         [NativeTypeName("int (*)(struct mdkVideoFrame *, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, int> width;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, int> width;
 
         [NativeTypeName("int (*)(struct mdkVideoFrame *, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, int> height;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, int> height;
 
         [NativeTypeName("enum MDK_PixelFormat (*)(struct mdkVideoFrame *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, MDK_PixelFormat> format;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, MDK_PixelFormat> format;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, const uint8_t *, int, void *, void (*)(void **), int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte*, int, void*, delegate* unmanaged[Cdecl]<void**, void>, int, byte> addBuffer;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte*, int, void*, delegate* unmanaged[Cdecl]<void**, void>, int, byte> addBuffer;
 
         [NativeTypeName("void (*)(struct mdkVideoFrame *, const uint8_t **const, int *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte**, int*, void> setBuffers;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte**, int*, void> setBuffers;
 
         [NativeTypeName("const uint8_t *(*)(struct mdkVideoFrame *, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, byte*> bufferData;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, byte*> bufferData;
 
         [NativeTypeName("int (*)(struct mdkVideoFrame *, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, int> bytesPerLine;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int, int> bytesPerLine;
 
         [NativeTypeName("void (*)(struct mdkVideoFrame *, double)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, double, void> setTimestamp;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, double, void> setTimestamp;
 
         [NativeTypeName("double (*)(struct mdkVideoFrame *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, double> timestamp;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, double> timestamp;
 
         [NativeTypeName("struct mdkVideoFrameAPI *(*)(struct mdkVideoFrame *, enum MDK_PixelFormat, int, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, MDK_PixelFormat, int, int, mdkVideoFrameAPI*> to;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, MDK_PixelFormat, int, int, mdkVideoFrameAPI*> to;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, const char *, const char *, float)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, sbyte*, sbyte*, float, byte> save;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, sbyte*, sbyte*, float, byte> save;
 
         [NativeTypeName("struct mdkVideoFrameAPI *(*)(struct mdkVideoFrame *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoFrameAPI*> onDestroy;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoFrameAPI*> onDestroy;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkDX11Resource *, int, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkDX11Resource*, int, int, byte> fromDX11;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkDX11Resource*, int, int, byte> fromDX11;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkDX9Resource *, int, int)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkDX9Resource*, int, int, byte> fromDX9;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkDX9Resource*, int, int, byte> fromDX9;
+
+        [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkVAAPIResource *, int, int)")]
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkVAAPIResource*, int, int, byte> fromVAAPI;
+
+        [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkCUDAResource *, int, int)")]
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkCUDAResource*, int, int, byte> fromCUDA;
 
         [NativeTypeName("bool (*)()")]
-        internal delegate* unmanaged[Cdecl]<byte> fromDX12;
+        public delegate* unmanaged[Cdecl]<byte> fromMetal;
 
         [NativeTypeName("bool (*)()")]
-        internal delegate* unmanaged[Cdecl]<byte> fromMetal;
+        public delegate* unmanaged[Cdecl]<byte> fromVk;
 
         [NativeTypeName("bool (*)()")]
-        internal delegate* unmanaged[Cdecl]<byte> fromVk;
+        public delegate* unmanaged[Cdecl]<byte> fromGL;
 
         [NativeTypeName("bool (*)()")]
-        internal delegate* unmanaged[Cdecl]<byte> fromGL;
+        public delegate* unmanaged[Cdecl]<byte> fromDX12;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *)")]
-        internal delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte> toHost;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte> toHost;
 
-        [NativeTypeName("void *[12]")]
-        internal _reserved_e__FixedBuffer reserved;
+        [NativeTypeName("void *[10]")]
+        public _reserved_e__FixedBuffer reserved;
 
-        internal unsafe partial struct _reserved_e__FixedBuffer
+        public unsafe partial struct _reserved_e__FixedBuffer
         {
             public void* e0;
             public void* e1;
@@ -140,8 +212,6 @@ namespace MDK.SDK.NET.Gen
             public void* e7;
             public void* e8;
             public void* e9;
-            public void* e10;
-            public void* e11;
 
             public ref void* this[int index]
             {

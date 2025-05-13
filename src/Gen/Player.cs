@@ -58,6 +58,14 @@ namespace MDK.SDK.NET.Gen
 
         internal void* opaque;
     }
+    
+    internal unsafe partial struct mdkAudioCallback
+    {
+        [NativeTypeName("int (*)(struct mdkAudioFrameAPI **, int, void *)")]
+        internal delegate* unmanaged[Cdecl]<mdkAudioFrameAPI**, int, void*, int> cb;
+
+        internal void* opaque;
+    }
 
     internal unsafe partial struct SwitchBitrateCallback
     {
@@ -132,6 +140,14 @@ namespace MDK.SDK.NET.Gen
     {
         [NativeTypeName("double (*)(void *)")]
         internal delegate* unmanaged[Cdecl]<void*, double> cb;
+
+        internal void* opaque;
+    }
+    
+    internal unsafe partial struct mdkSubtitleCallback
+    {
+        [NativeTypeName("void (*)(const char *, void *)")]
+        internal delegate* unmanaged[Cdecl]<sbyte*, void*, void> cb;
 
         internal void* opaque;
     }
@@ -243,8 +259,8 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, mdkVideoCallback)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkVideoCallback, void> onVideo;
 
-        [NativeTypeName("void (*)(struct mdkPlayer *)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, void> onAudio;
+        [NativeTypeName("void (*)(struct mdkPlayer *, mdkAudioCallback)")]
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkAudioCallback, void> onAudio;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, void (*)(struct mdkVideoFrameAPI *, void *))")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, delegate* unmanaged[Cdecl]<mdkVideoFrameAPI*, void*, void>, void> beforeVideoRender;
@@ -306,7 +322,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, int64_t, int64_t)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, long, long, void> setRange;
 
-        [NativeTypeName("void (*)(struct mdkPlayer *, mdkRenderAPI *, void *)")]
+        [NativeTypeName("void (*)(struct mdkPlayer *, const mdkRenderAPI *, void *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkRenderAPI*, void*, void> setRenderAPI;
 
         [NativeTypeName("mdkRenderAPI *(*)(struct mdkPlayer *, void *)")]
@@ -353,6 +369,9 @@ namespace MDK.SDK.NET.Gen
 
         [NativeTypeName("bool (*)(struct mdkPlayer *, const uint8_t *, size_t, int)")]
         public delegate* unmanaged[Cdecl]<mdkPlayer*, byte*, nuint, int, byte> appendBuffer;
+        
+        [NativeTypeName("void (*)(struct mdkPlayer *, double, int, mdkSubtitleCallback)")]
+        public delegate* unmanaged[Cdecl]<mdkPlayer*, double, int, mdkSubtitleCallback, void> subtitleText;
 
         [UnscopedRef]
         internal ref void* reserved2

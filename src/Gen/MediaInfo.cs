@@ -99,8 +99,14 @@ namespace MDK.SDK.NET.Gen
 
         internal float par;
 
-        [NativeTypeName("char[128]")]
-        internal fixed sbyte reserved[128];
+        [NativeTypeName("enum MDK_ColorSpace")]
+        public MDK_ColorSpace color_space;
+
+        [NativeTypeName("uint8_t")]
+        public byte dovi_profile;
+
+        [NativeTypeName("char[123]")]
+        public fixed sbyte reserved[123];
     }
 
     internal unsafe partial struct mdkVideoStreamInfo
@@ -228,44 +234,44 @@ namespace MDK.SDK.NET.Gen
     internal static unsafe partial class Methods
     {
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_AudioStreamCodecParameters([NativeTypeName("const mdkAudioStreamInfo *")] mdkAudioStreamInfo* param0, mdkAudioCodecParameters* p);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_AudioStreamMetadata([NativeTypeName("const mdkAudioStreamInfo *")] mdkAudioStreamInfo* param0, mdkStringMapEntry* entry);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_VideoStreamCodecParameters([NativeTypeName("const mdkVideoStreamInfo *")] mdkVideoStreamInfo* param0, mdkVideoCodecParameters* p);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_VideoStreamMetadata([NativeTypeName("const mdkVideoStreamInfo *")] mdkVideoStreamInfo* param0, mdkStringMapEntry* entry);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("const uint8_t *")]
         internal static partial byte* MDK_VideoStreamData([NativeTypeName("const mdkVideoStreamInfo *")] mdkVideoStreamInfo* param0, int* len, int flags);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_SubtitleStreamCodecParameters([NativeTypeName("const mdkSubtitleStreamInfo *")] mdkSubtitleStreamInfo* param0, mdkSubtitleCodecParameters* p);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_SubtitleStreamMetadata([NativeTypeName("const mdkSubtitleStreamInfo *")] mdkSubtitleStreamInfo* param0, mdkStringMapEntry* entry);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_ProgramMetadata([NativeTypeName("const mdkProgramInfo *")] mdkProgramInfo* param0, mdkStringMapEntry* entry);
 
         [LibraryImport("mdk")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_MediaMetadata([NativeTypeName("const mdkMediaInfo *")] mdkMediaInfo* param0, mdkStringMapEntry* entry);
     }

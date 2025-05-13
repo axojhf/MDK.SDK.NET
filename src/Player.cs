@@ -358,7 +358,7 @@ public class MDKPlayer : IDisposable
         {
             prepare_cb_ = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static byte temp(long position, void* boost, void* opaque)
+            static byte temp(long position, bool* boost, void* opaque)
             {
                 return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnPrepare>((nint)opaque)(position, (IntPtr)boost) ? 1 : 0);
             }

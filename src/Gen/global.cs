@@ -79,6 +79,8 @@ namespace MDK.SDK.NET.Gen
         MDK_VideoEffect_Contrast,
         MDK_VideoEffect_Hue,
         MDK_VideoEffect_Saturation,
+        MDK_VideoEffect_ScaleChannels,
+        MDK_VideoEffect_ShiftChannels,
     }
 
     internal enum MDK_ColorSpace
@@ -90,6 +92,7 @@ namespace MDK.SDK.NET.Gen
         MDK_ColorSpace_ExtendedLinearDisplayP3,
         MDK_ColorSpace_ExtendedSRGB,
         MDK_ColorSpace_ExtendedLinearSRGB,
+        MDK_ColorSpace_BT2100_HLG,
     }
 
     internal enum MDK_LogLevel
@@ -202,51 +205,51 @@ namespace MDK.SDK.NET.Gen
         internal static partial void MDK_setLogHandler(mdkLogHandler param0);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_setGlobalOptionString([NativeTypeName("const char *")] string key, [NativeTypeName("const char *")] string value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_setGlobalOptionInt32([NativeTypeName("const char *")] string key, int value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_setGlobalOptionFloat([NativeTypeName("const char *")] string key, float value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void MDK_setGlobalOptionPtr([NativeTypeName("const char *")] string key, void* value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_getGlobalOptionString([NativeTypeName("const char *")] string key, [NativeTypeName("const char **")] sbyte** value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_getGlobalOptionInt32([NativeTypeName("const char *")] string key, int* value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("bool")]
         internal static partial byte MDK_getGlobalOptionPtr([NativeTypeName("const char *")] string key, void** value);
 
         [LibraryImport("mdk", StringMarshalling = StringMarshalling.Utf8)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         [return: NativeTypeName("char *")]
         internal static partial sbyte* MDK_strdup([NativeTypeName("const char *")] string strSource);
 
         [NativeTypeName("#define MDK_MAJOR 0")]
         internal const int MDK_MAJOR = 0;
 
-        [NativeTypeName("#define MDK_MINOR 30")]
-        internal const int MDK_MINOR = 30;
+        [NativeTypeName("#define MDK_MINOR 32")]
+        internal const int MDK_MINOR = 32;
 
-        [NativeTypeName("#define MDK_MICRO 1")]
-        internal const int MDK_MICRO = 1;
+        [NativeTypeName("#define MDK_MICRO 0")]
+        internal const int MDK_MICRO = 0;
 
         [NativeTypeName("#define MDK_VERSION MDK_VERSION_INT(MDK_MAJOR, MDK_MINOR, MDK_MICRO)")]
-        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((30 & 0xff) << 8) | (1 & 0xff));
+        internal const int MDK_VERSION = ((0 & 0xff) << 16) | ((32 & 0xff) << 8) | (0 & 0xff);
     }
 }
