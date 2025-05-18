@@ -58,7 +58,7 @@ namespace MDK.SDK.NET.Gen
 
         internal void* opaque;
     }
-    
+
     internal unsafe partial struct mdkAudioCallback
     {
         [NativeTypeName("int (*)(struct mdkAudioFrameAPI **, int, void *)")]
@@ -143,7 +143,7 @@ namespace MDK.SDK.NET.Gen
 
         internal void* opaque;
     }
-    
+
     internal unsafe partial struct mdkSubtitleCallback
     {
         [NativeTypeName("void (*)(const char *, void *)")]
@@ -369,7 +369,7 @@ namespace MDK.SDK.NET.Gen
 
         [NativeTypeName("bool (*)(struct mdkPlayer *, const uint8_t *, size_t, int)")]
         public delegate* unmanaged[Cdecl]<mdkPlayer*, byte*, nuint, int, byte> appendBuffer;
-        
+
         [NativeTypeName("void (*)(struct mdkPlayer *, double, int, mdkSubtitleCallback)")]
         public delegate* unmanaged[Cdecl]<mdkPlayer*, double, int, mdkSubtitleCallback, void> subtitleText;
 

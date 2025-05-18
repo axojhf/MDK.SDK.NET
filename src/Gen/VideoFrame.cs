@@ -19,7 +19,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("IDirect3DSurface9 *")]
         public void* surface;
     }
-    
+
     internal unsafe partial struct mdkVAAPIResource
     {
         public int size;
@@ -78,7 +78,7 @@ namespace MDK.SDK.NET.Gen
         MDK_PixelFormat_RGBPF32,
         MDK_PixelFormat_BGRAF32,
     }
-    
+
     internal unsafe partial struct mdkCUDAResource
     {
         public int size;

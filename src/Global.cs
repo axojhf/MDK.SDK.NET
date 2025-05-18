@@ -160,6 +160,7 @@ public enum MapDirection
 
 /// <summary>
 /// per video renderer effect. set via Player.
+/// Only one(the last call) of ScaleChannels or ShiftChannels will be applied
 /// </summary>
 public enum VideoEffect
 {
@@ -179,6 +180,14 @@ public enum VideoEffect
     /// [-1.0f, 1.0f], default 0
     /// </summary>
     Saturation,
+    /// <summary>
+    /// {Sr, Sg, Sb}, Sx: [0, 1.0f]. no scale: {1.0f, 1.0f, 1.0f}
+    /// </summary>
+    ScaleChannels,
+    /// <summary>
+    /// {Sr, Sg, Sb}, Sx: [-1.0f, 1.0f]. no shift: {.0f, .0f, .0f}
+    /// </summary>
+    ShiftChannels,
 };
 
 public enum ColorSpace
@@ -199,6 +208,7 @@ public enum ColorSpace
     /// linear sRGB in extended component range. Display-referred white level
     /// </summary>
     ColorSpaceExtendedLinearSRGB,
+    ColorSpaceBT2100_HLG,
 };
 
 public enum PixelFormat

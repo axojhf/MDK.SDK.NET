@@ -8,8 +8,8 @@ namespace MDK.SDK.NET;
 /// </summary>
 public class VideoFrame : IDisposable
 {
-    private unsafe mdkVideoFrameAPI* p;
-    private bool owner_ = true;
+    private unsafe mdkVideoFrameAPI* _p;
+    private bool _owner = true;
 
     /// <summary>
     /// Constructs a video frame for given format, size. If strides is not null, a single contiguous memory for all planes will be allocated.
@@ -24,9 +24,9 @@ public class VideoFrame : IDisposable
     {
         unsafe
         {
-            p = Methods.mdkVideoFrameAPI_new(width, height, (MDK_PixelFormat)((int)format - 1));
+            _p = Methods.mdkVideoFrameAPI_new(width, height, (MDK_PixelFormat)((int)format - 1));
             if (data != 0)
-                p->setBuffers(p->@object, (byte**)data, (int*)strides);
+                _p->setBuffers(_p->@object, (byte**)data, (int*)strides);
         }
     }
 
@@ -36,7 +36,7 @@ public class VideoFrame : IDisposable
     /// <param name="pp">mdkVideoFrameAPI pointer.</param>
     internal unsafe VideoFrame(mdkVideoFrameAPI* pp)
     {
-        p = pp;
+        _p = pp;
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public class VideoFrame : IDisposable
     /// <value>
     ///   <c>true</c> if this instance is valid; otherwise, <c>false</c>.
     /// </value>
-    public bool IsValid { get { unsafe { return p != null; } } }
+    public bool IsValid { get { unsafe { return _p != null; } } }
 
     /// <summary>
     /// Gets or sets the timestamp of the video frame.
@@ -64,9 +64,9 @@ public class VideoFrame : IDisposable
         {
             if (!IsValid)
                 return -1;
-            unsafe { return p->timestamp(p->@object); }
+            unsafe { return _p->timestamp(_p->@object); }
         }
-        set { unsafe { p->setTimestamp(p->@object, value); } }
+        set { unsafe { _p->setTimestamp(_p->@object, value); } }
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class VideoFrame : IDisposable
     /// </summary>
     public int PlaneCount
     {
-        get { unsafe { return p->planeCount(p->@object); } }
+        get { unsafe { return _p->planeCount(_p->@object); } }
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class VideoFrame : IDisposable
     /// <returns>Width of the video frame.</returns>
     public int Width(int plane = -1)
     {
-        unsafe { return p->width(p->@object, plane); }
+        unsafe { return _p->width(_p->@object, plane); }
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public class VideoFrame : IDisposable
     /// <returns>Height of the video frame.</returns>
     public int Height(int plane = -1)
     {
-        unsafe { return p->height(p->@object, plane); }
+        unsafe { return _p->height(_p->@object, plane); }
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public class VideoFrame : IDisposable
     {
         unsafe
         {
-            return (PixelFormat)(p->format(p->@object) + 1);
+            return (PixelFormat)(_p->format(_p->@object) + 1);
         }
     }
 
@@ -118,12 +118,9 @@ public class VideoFrame : IDisposable
     /// <param name="bufDeleter">To delete buf when frame is destroyed.</param>
     /// <param name="plane">Plane index.</param>
     /// <returns>True if successful, false otherwise.</returns>
-    unsafe public bool AddBuffer(IntPtr data, int stride, IntPtr buf, delegate* unmanaged[Cdecl]<void**, void> bufDeleter, int plane = -1)
+    public unsafe bool AddBuffer(IntPtr data, int stride, int plane = -1, IntPtr buf = 0, delegate* unmanaged[Cdecl]<void**, void> bufDeleter = null)
     {
-        unsafe
-        {
-            return Convert.ToBoolean(p->addBuffer(p->@object, (byte*)data, stride, (void*)buf, bufDeleter, plane));
-        }
+        return Convert.ToBoolean(_p->addBuffer(_p->@object, (byte*)data, stride, (void*)buf, bufDeleter, plane));
     }
 
     /// <summary>
@@ -136,7 +133,7 @@ public class VideoFrame : IDisposable
     {
         unsafe
         {
-            p->setBuffers(p->@object, (byte**)data, (int*)strides);
+            _p->setBuffers(_p->@object, (byte**)data, (int*)strides);
         }
     }
 
@@ -147,7 +144,7 @@ public class VideoFrame : IDisposable
     /// <returns>Buffer data of the video frame.</returns>
     public IntPtr BufferData(int plane = 0)
     {
-        unsafe { return (nint)p->bufferData(p->@object, plane); }
+        unsafe { return (nint)_p->bufferData(_p->@object, plane); }
     }
 
     /// <summary>
@@ -157,7 +154,7 @@ public class VideoFrame : IDisposable
     /// <returns>Bytes per line of the video frame.</returns>
     public int BytesPerLine(int plane = 0)
     {
-        unsafe { return p->bytesPerLine(p->@object, plane); }
+        unsafe { return _p->bytesPerLine(_p->@object, plane); }
     }
 
     /// <summary>
@@ -169,7 +166,7 @@ public class VideoFrame : IDisposable
     /// <returns>Converted video frame.</returns>
     public VideoFrame To(PixelFormat format, int width = -1, int height = -1)
     {
-        unsafe { return new VideoFrame(p->to(p->@object, (MDK_PixelFormat)((int)format - 1), width, height)); }
+        unsafe { return new VideoFrame(_p->to(_p->@object, (MDK_PixelFormat)((int)format - 1), width, height)); }
     }
 
     /// <summary>
@@ -187,10 +184,10 @@ public class VideoFrame : IDisposable
     {
         unsafe
         {
-            IntPtr _filename = Marshal.StringToCoTaskMemUTF8(fileName), _format = Marshal.StringToCoTaskMemUTF8(format);
-            var ret = Convert.ToBoolean(p->save(p->@object, (sbyte*)_filename, (sbyte*)_format, quality));
-            Marshal.FreeCoTaskMem(_filename);
-            Marshal.FreeCoTaskMem(_format);
+            IntPtr filename = Marshal.StringToCoTaskMemUTF8(fileName), formatTemp = Marshal.StringToCoTaskMemUTF8(format);
+            var ret = Convert.ToBoolean(_p->save(_p->@object, (sbyte*)filename, (sbyte*)formatTemp, quality));
+            Marshal.FreeCoTaskMem(filename);
+            Marshal.FreeCoTaskMem(formatTemp);
             return ret;
         }
     }
@@ -201,11 +198,11 @@ public class VideoFrame : IDisposable
     /// <param name="api">mdkVideoFrameAPI pointer.</param>
     internal unsafe void Attach(mdkVideoFrameAPI* api)
     {
-        if (owner_)
-            fixed (mdkVideoFrameAPI** p = &this.p)
+        if (_owner)
+            fixed (mdkVideoFrameAPI** p = &this._p)
                 Methods.mdkVideoFrameAPI_delete(p);
-        p = api;
-        owner_ = false;
+        _p = api;
+        _owner = false;
     }
 
     /// <summary>
@@ -214,8 +211,8 @@ public class VideoFrame : IDisposable
     /// <returns>mdkVideoFrameAPI pointer.</returns>
     internal unsafe mdkVideoFrameAPI* Detach()
     {
-        var ptr = p;
-        p = null;
+        var ptr = _p;
+        _p = null;
         return ptr;
     }
 
@@ -242,8 +239,8 @@ public class VideoFrame : IDisposable
         // Dispose unmanaged resources.
         unsafe
         {
-            if (owner_)
-                fixed (mdkVideoFrameAPI** p = &this.p)
+            if (_owner)
+                fixed (mdkVideoFrameAPI** p = &this._p)
                     Methods.mdkVideoFrameAPI_delete(p);
         }
     }

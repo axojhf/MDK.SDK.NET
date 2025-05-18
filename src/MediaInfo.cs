@@ -91,6 +91,10 @@ public partial struct VideoCodecParameters
     public int b_frames;
 
     public float par;
+
+    public ColorSpace color_space;
+
+    public byte dovi_profile;
 }
 
 public partial struct VideoStreamInfo
@@ -241,7 +245,7 @@ public partial struct MediaInfo
             mediaInfo.metadata.TryAdd(key, value);
         }
 
-        for (int i = 0; i < cinfo->nb_chapters; ++i)
+        for (var i = 0; i < cinfo->nb_chapters; ++i)
         {
             var cci = &cinfo->chapters[i];
             ChapterInfo ci = new()
@@ -256,7 +260,7 @@ public partial struct MediaInfo
             mediaInfo.chapters.Add(ci);
         }
 
-        for (int i = 0; i < cinfo->nb_audio; ++i)
+        for (var i = 0; i < cinfo->nb_audio; ++i)
         {
             AudioStreamInfo si = new();
             var csi = &cinfo->audio[i];
@@ -297,7 +301,7 @@ public partial struct MediaInfo
             mediaInfo.audio.Add(si);
         }
 
-        for (int i = 0; i < cinfo->nb_video; ++i)
+        for (var i = 0; i < cinfo->nb_video; ++i)
         {
             VideoStreamInfo si = new();
             var csi = &cinfo->video[i];
@@ -325,6 +329,8 @@ public partial struct MediaInfo
                 height = codec.height,
                 b_frames = codec.b_frames,
                 par = codec.par,
+                color_space = (ColorSpace)codec.color_space,
+                dovi_profile = codec.dovi_profile
             };
             si.metadata = [];
             e.next = null;
@@ -337,7 +343,7 @@ public partial struct MediaInfo
             mediaInfo.video.Add(si);
         }
 
-        for (int i = 0; i < cinfo->nb_subtitle; ++i)
+        for (var i = 0; i < cinfo->nb_subtitle; ++i)
         {
             SubtitleStreamInfo si = new();
             var csi = &cinfo->subtitle[i];
@@ -368,13 +374,13 @@ public partial struct MediaInfo
             mediaInfo.subtitle.Add(si);
         }
 
-        for (int i = 0; i < cinfo->nb_programs; ++i)
+        for (var i = 0; i < cinfo->nb_programs; ++i)
         {
             ProgramInfo pi = new();
             var cpi = cinfo->programs[i];
             pi.id = cpi.id;
             pi.stream = [];
-            for (int j = 0; j < cpi.nb_stream; ++j)
+            for (var j = 0; j < cpi.nb_stream; ++j)
             {
                 pi.stream.Add(cpi.stream[j]);
             }

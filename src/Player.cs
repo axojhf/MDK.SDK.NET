@@ -11,7 +11,7 @@ namespace MDK.SDK.NET;
 /// </summary>
 public class MDKPlayer : IDisposable
 {
-    unsafe private mdkPlayerAPI* p = null;
+    private unsafe mdkPlayerAPI* p = null;
     private bool owner_ = false;
 
     private bool mute_ = false;
@@ -29,7 +29,8 @@ public class MDKPlayer : IDisposable
     private CallBackOnSwitchBitrate? switch_cb_ = null;
     readonly object switch_mtx_ = new();
     private CallBackOnSnapshot? snapshot_cb_ = null;
-    private CallBackOnFrame? video_cb_ = null;
+    private CallBackOnFrame4Video? video_cb_ = null;
+    private CallBackOnFrame4Audio? audio_cb_ = null;
     readonly object video_mtx_ = new();
     private CallBackOnSync? sync_cb_ = null;
     readonly object sync_mtx_ = new();
@@ -1264,7 +1265,32 @@ public class MDKPlayer : IDisposable
         return this;
     }
 
-    public delegate int CallBackOnFrame(VideoFrame frame, int track);
+
+    public string SubtitleText(double time = -1, int style = 0)
+    {
+        unsafe
+        {
+            var result = "";
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+            static void temp(sbyte* text, void* opaque)
+            {
+                if (text == null || opaque == null)
+                    return;
+                var ret = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (ret.Target is string s)
+                    s = Marshal.PtrToStringUTF8((IntPtr)text) ?? "";
+            }
+            mdkSubtitleCallback cb = new();
+            var retHandle = GCHandle.Alloc(result);
+            cb.cb = &temp;
+            cb.opaque = (void*)GCHandle.ToIntPtr(retHandle);
+            p->subtitleText(p->@object, time, style, cb);
+            retHandle.Free();
+            return result;
+        }
+    }
+
+    public delegate int CallBackOnFrame4Video(VideoFrame frame, int track);
     /// <summary>
     /// A callback to be invoked before delivering a frame to renderers. Frame can be VideoFrame and AudioFrame(NOT IMPLEMENTED).<br/>
     /// The callback can be used as a filter.<br/>
@@ -1273,7 +1299,7 @@ public class MDKPlayer : IDisposable
     /// </summary>
     /// <param name="cb">callback to be invoked. returns pending number of frames. callback parameter is input and output frame. if input frame is an invalid frame, output a pending frame.</param>
     /// <returns></returns>
-    public MDKPlayer OnFrame(CallBackOnFrame cb)
+    public MDKPlayer OnFrame(CallBackOnFrame4Video cb)
     {
         unsafe
         {
@@ -1281,7 +1307,7 @@ public class MDKPlayer : IDisposable
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static int temp(mdkVideoFrameAPI** pFrame, int track, void* opaque)
             {
-                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnFrame>((nint)opaque);
+                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnFrame4Video>((nint)opaque);
                 VideoFrame frame = new(null);
                 frame.Attach(*pFrame);
                 var pendings = f(frame, track);
@@ -1294,6 +1320,41 @@ public class MDKPlayer : IDisposable
                 opaque = (void*)(video_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(video_cb_)),
             };
             p->onVideo(p->@object, callback);
+        }
+        return this;
+    }
+
+
+    public delegate int CallBackOnFrame4Audio(AudioFrame frame, int track);
+    /// <summary>
+    /// A callback to be invoked before delivering a frame to renderers. Frame can be VideoFrame and AudioFrame.<br/>
+    /// The callback can be used as a filter.<br/>
+    /// TODO: frames not in host memory<br/>
+    /// For most filters, 1 input frame generates 1 output frame, then return 0.
+    /// </summary>
+    /// <param name="cb">callback to be invoked. returns pending number of frames. callback parameter is input and output frame. if input frame is an invalid frame, output a pending frame.</param>
+    /// <returns></returns>
+    public MDKPlayer OnFrame(CallBackOnFrame4Audio cb)
+    {
+        unsafe
+        {
+            audio_cb_ = cb;
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+            static int temp(mdkAudioFrameAPI** pFrame, int track, void* opaque)
+            {
+                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnFrame4Audio>((nint)opaque);
+                AudioFrame frame = new(null);
+                frame.Attach(*pFrame);
+                var pendings = f(frame, track);
+                *pFrame = frame.Detach();
+                return pendings;
+            }
+            mdkAudioCallback callback = new()
+            {
+                cb = &temp,
+                opaque = (void*)(audio_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(audio_cb_)),
+            };
+            p->onAudio(p->@object, callback);
         }
         return this;
     }

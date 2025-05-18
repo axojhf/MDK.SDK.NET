@@ -389,30 +389,45 @@ public struct VulkanRenderAPI
 
     // Set by user and used internally even if device is provided by user
 
+    /// <summary>
+    /// OPTIONAL. shared instance. for internal created context but not foreign context, to load instance extensions
+    /// </summary>
     public IntPtr Instance
     {
         get { unsafe { return (nint)internalAPI.instance; } }
         set { unsafe { internalAPI.instance = (void*)value; } }
     }
 
+    /// <summary>
+    /// Optional to create internal context. MUST not null for foreign context. Must set if logical device is provided to create internal context.
+    /// </summary>
     public IntPtr PhyDevice
     {
         get { unsafe { return (nint)internalAPI.phy_device; } }
         set { unsafe { internalAPI.phy_device = (void*)value; } }
     }
 
+    /// <summary>
+    /// Optional to create internal context as shared device. Required for foreign context.
+    /// </summary>
     public IntPtr Device
     {
         get { unsafe { return (nint)internalAPI.device; } }
         set { unsafe { internalAPI.device = (void*)value; } }
     }
 
+    /// <summary>
+    /// OPTIONAL. If null, will use gfx_queue_index. NOT required if vk is create internally
+    /// </summary>
     public IntPtr GraphicsQueue
     {
         get { unsafe { return (nint)internalAPI.graphics_queue; } }
         set { unsafe { internalAPI.graphics_queue = (void*)value; } }
     }
 
+    /// <summary>
+    /// VkImage? so can use qrhitexture.nativeTexture().object
+    /// </summary>
     public IntPtr Rt
     {
         get { unsafe { return (nint)internalAPI.rt; } }
@@ -434,24 +449,39 @@ public struct VulkanRenderAPI
         set { unsafe { internalAPI.opaque = (void*)value; } }
     }
 
+    /// <summary>
+    /// Get render target image size
+    /// </summary>
     public IntPtr RenderTargetInfo
     {
         get { unsafe { return (nint)internalAPI.renderTargetInfo; } }
         set { unsafe { internalAPI.renderTargetInfo = (delegate* unmanaged[Cdecl]<void*, int*, int*, void*, void*, int>)value; } }
     }
 
+    /// <summary>
+    /// Optional. Can be null(or not) for offscreen rendering if rt is not null.
+    /// MUST be paired with endFrame()
+    /// </summary>
     public IntPtr BeginFrame
     {
         get { unsafe { return (nint)internalAPI.beginFrame; } }
         set { unsafe { internalAPI.beginFrame = (delegate* unmanaged[Cdecl]<void*, void*, void*, void*, int>)value; } }
     }
 
+    /// <summary>
+    /// if null, create pool internally(RTT)
+    /// </summary>
     public IntPtr CurrentCommandBuffer
     {
         get { unsafe { return (nint)internalAPI.currentCommandBuffer; } }
         set { unsafe { internalAPI.currentCommandBuffer = (delegate* unmanaged[Cdecl]<void*, void*>)value; } }
     }
 
+    /// <summary>
+    /// Optional. If null, frame is guaranteed to be rendered to image before executing the next command buffer in user code.
+    /// If not null, user can wait for drawSem before using the image.
+    /// MUST be paired with beginFrame()
+    /// </summary>
     public IntPtr EndFrame
     {
         get { unsafe { return (nint)internalAPI.endFrame; } }
@@ -519,6 +549,9 @@ public struct VulkanRenderAPI
         set { unsafe { internalAPI.buffers = value; } }
     }
 
+    /// <summary>
+    /// -1: dGPU &gt; iGPU &gt; vGPU &gt; software &gt; others. &gt;= 0: index
+    /// </summary>
     public int DeviceIndex
     {
         get { unsafe { return internalAPI.device_index; } }
@@ -561,6 +594,9 @@ public struct VulkanRenderAPI
         set { unsafe { internalAPI.compute_queue_index = value; } }
     }
 
+    /// <summary>
+    /// Default 8
+    /// </summary>
     public int Depth
     {
         get { unsafe { return internalAPI.depth; } }
@@ -675,6 +711,9 @@ struct D3D12RenderAPI
         set { unsafe { internalAPI.currentRenderTarget = (delegate* unmanaged[Cdecl]<void*, uint*, uint*, void*, void*>)value; } }
     }
 
+    /// <summary>
+    /// optional. will use an internal command list if null. if not null, can be used by on screen rendering
+    /// </summary>
     public IntPtr CurrentCommandList
     {
         get { unsafe { return (nint)internalAPI.currentCommandList; } }
@@ -744,7 +783,7 @@ struct D3D12RenderAPI
             internalAPI.opaque = (void*)0;
             internalAPI.currentRenderTarget = (delegate* unmanaged[Cdecl]<void*, uint*, uint*, void*, void*>)0;
             internalAPI.currentCommandList = (delegate* unmanaged[Cdecl]<void*, void*>)0;
-            internalAPI.debug = (byte)0;
+            internalAPI.debug = 0;
             internalAPI.buffers = 2;
             internalAPI.adapter = 0;
             internalAPI.feature_level = 0;
