@@ -36,7 +36,7 @@ public class MDKPlayer : IDisposable
     readonly object sync_mtx_ = new();
     private Dictionary<CallbackToken, CallBackOnEvent> event_cb_ = [];
     private Dictionary<CallbackToken, CallbackToken> event_cb_key_ = [];
-    readonly object event_mtx_ = new();
+    private readonly System.Threading.Lock event_mtx_ = new();
     private Dictionary<CallbackToken, CallBackOnLoop> loop_cb_ = [];
     private Dictionary<CallbackToken, CallbackToken> loop_cb_key_ = [];
     readonly object loop_mtx_ = new();

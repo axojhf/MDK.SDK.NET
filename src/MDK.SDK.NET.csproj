@@ -1,15 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <Version>0.0.1</Version>
-    <PackageId>MDK.SDK.NET</PackageId>
-    <Authors>Axojhf</Authors>
-    <RepositoryUrl>https://github.com/axojhf/MDK.SDK.NET</RepositoryUrl>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
-  
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <Version>0.0.1</Version>
+        <PackageId>MDK.SDK.NET</PackageId>
+        <Authors>Axojhf</Authors>
+        <RepositoryUrl>https://github.com/axojhf/MDK.SDK.NET</RepositoryUrl>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))" Include="Backport.System.Threading.Lock" Version="3.1.4"/>
+    </ItemGroup>
 </Project>
