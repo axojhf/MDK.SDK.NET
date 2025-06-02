@@ -17,34 +17,14 @@ public class MDKPlayer : IDisposable
 
     private bool _mute;
     private float _volume = 1.0f;
-    private CallbackCurrentMediaChanged? _currentCb;
-    private readonly object _currentMtx = new();
-    private CallBackOnTimeout? _timeoutCb;
-    private readonly object _timeoutMtx = new();
-    private CallBackOnPrepare? _prepareCb;
-    private CallBackOnStateChanged? _stateCb;
-    private readonly object _stateMtx = new();
-    private CallBackOnRender? _renderCb;
-    private readonly object _renderMtx = new();
-    private CallBackOnSeek? _seekCb;
-    private CallBackOnSwitchBitrate? _switchCb;
-    private readonly object _switchMtx = new();
-    private CallBackOnSnapshot? _snapshotCb;
-    private CallBackOnFrame4Video? _videoCb;
-    private CallBackOnFrame4Audio? _audioCb;
-    private readonly object _videoMtx = new();
-    private CallBackOnSync? _syncCb;
-    private readonly object _syncMtx = new();
     private readonly Dictionary<CallbackToken, CallBackOnEvent> _eventCb = [];
     private readonly Dictionary<CallbackToken, CallbackToken> _eventCbKey = [];
-    private readonly Lock _eventMtx = new();
     private readonly Dictionary<CallbackToken, CallBackOnLoop> _loopCb = [];
     private readonly Dictionary<CallbackToken, CallbackToken> _loopCbKey = [];
     private readonly Lock _loopMtx = new();
     private readonly Dictionary<CallbackToken, CallBackOnMediaStatus> _statusCb = [];
     private readonly Dictionary<CallbackToken, CallbackToken> _statusCbKey = [];
     private readonly Lock _statusMtx = new();
-    // private MediaInfo _info;
 
     private static CallbackToken _onEventK = 1;
     private static CallbackToken _onLoopK = 1;
@@ -240,28 +220,46 @@ public class MDKPlayer : IDisposable
     /// a delegate for CurrentMediaChanged
     /// </summary>
     public delegate void CallbackCurrentMediaChanged();
+    private class CurrentMediaChangedCtx
+    {
+        public CallbackCurrentMediaChanged? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly CurrentMediaChangedCtx _currentCtx = new();
+    private GCHandle? _currentCtxGcHandle;
 
     /// <summary>
     /// Set a callback which is invoked when current media is stopped and a new media is about to play, or when setMedia() is called.<br/>
     /// Call before setMedia() to take effect.
     /// </summary>
     /// <param name="cb"></param>
-    public void CurrentMediaChanged(CallbackCurrentMediaChanged cb)
+    public void CurrentMediaChanged(CallbackCurrentMediaChanged? cb)
     {
-        _currentCb = cb;
+        lock (_currentCtx.Lock)
+        {
+            _currentCtx.Callback = cb;
+        }
+        _currentCtxGcHandle ??= GCHandle.Alloc(_currentCtx);
         unsafe
         {
-            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static void Temp(void* opaque)
-            {
-                Marshal.GetDelegateForFunctionPointer<CallbackCurrentMediaChanged>((nint)opaque)();
-            }
             mdkCurrentMediaChangedCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_currentCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_currentCb)),
+                opaque = (void*)(_currentCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_currentCtxGcHandle.Value)),
             };
             _p->currentMediaChanged(_p->@object, callback);
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+            static void Temp(void* opaque)
+            {
+                if (opaque == null)
+                    return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not CurrentMediaChangedCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    ctx.Callback?.Invoke();
+                }
+            }
         }
     }
 
@@ -331,6 +329,13 @@ public class MDKPlayer : IDisposable
     /// a delegate for SetTimeout
     /// </summary>
     public delegate bool CallBackOnTimeout(long ms);
+    private class SetTimeoutCtx
+    {
+        public CallBackOnTimeout? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly SetTimeoutCtx _timeoutCtx = new();
+    private GCHandle? _timeoutCtxGcHandle;
     /// <summary>
     /// callback ms: elapsed milliseconds<br/>
     /// callback return: true to abort current operation on timeout.<br/>
@@ -342,18 +347,29 @@ public class MDKPlayer : IDisposable
     /// <param name="cb"></param>
     public void SetTimeout(long ms, CallBackOnTimeout cb)
     {
+        lock (_timeoutCtx.Lock)
+        {
+            _timeoutCtx.Callback = cb;
+            _timeoutCtxGcHandle ??= GCHandle.Alloc(_timeoutCtx);
+        }
         unsafe
         {
-            _timeoutCb = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static byte Temp(long ms, void* opaque)
             {
-                return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnTimeout>((nint)opaque)(ms) ? 1 : 0);
+                if (opaque == null)
+                    return 0;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SetTimeoutCtx ctx) return 0;
+                lock (ctx.Lock)
+                {
+                    return ctx.Callback!.Invoke(ms) ? (byte)1 : (byte)0;
+                }
             }
             mdkTimeoutCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_timeoutCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_timeoutCb)),
+                opaque = (void*)(_timeoutCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_timeoutCtxGcHandle.Value)),
             };
             _p->setTimeout(_p->@object, ms, callback);
         }
@@ -367,6 +383,13 @@ public class MDKPlayer : IDisposable
     /// <param name="boost">boost in callback can be set by user(*boost = true/false) to boost the first frame rendering. default is true.</param>
     /// <returns>false to unload media immediately when media is loaded and MediaInfo is ready, true to continue.</returns>
     public delegate bool CallBackOnPrepare(long position, IntPtr boost);
+    private class CallBackOnPrepareCtx
+    {
+        public CallBackOnPrepare? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly CallBackOnPrepareCtx _prepareCtx = new();
+    private GCHandle? _prepareCtxGcHandle;
     /// <summary>
     /// Preload a media and then becomes State::Paused.<br/>
     /// To play a media from a given position, call prepare(ms) then set(State::Playing)<br/>
@@ -378,18 +401,29 @@ public class MDKPlayer : IDisposable
     /// <param name="flags">seek flag if startPosition != 0.</param>
     public void Prepare(long startPosition = 0, CallBackOnPrepare? cb = null, SeekFlag flags = SeekFlag.FromStart)
     {
+        lock (_prepareCtx.Lock)
+        {
+            _prepareCtx.Callback = cb;
+            _prepareCtxGcHandle ??= GCHandle.Alloc(_prepareCtx);
+        }
         unsafe
         {
-            _prepareCb = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static byte Temp(long position, bool* boost, void* opaque)
             {
-                return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnPrepare>((nint)opaque)(position, (IntPtr)boost) ? 1 : 0);
+                if (opaque == null)
+                    return 0;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not CallBackOnPrepareCtx ctx) return 0;
+                lock (ctx.Lock)
+                {
+                    return ctx.Callback!.Invoke(position, (IntPtr)boost) ? (byte)1 : (byte)0;
+                }
             }
             mdkPrepareCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_prepareCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_prepareCb)),
+                opaque = (void*)(_prepareCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_prepareCtxGcHandle.Value)),
             };
             _p->prepare(_p->@object, startPosition, callback, (MDKSeekFlag)flags);
         }
@@ -454,26 +488,43 @@ public class MDKPlayer : IDisposable
     /// a delegate for OnStateChanged
     /// </summary>
     public delegate void CallBackOnStateChanged(State a);
+    private class OnStateChangedCtx
+    {
+        public CallBackOnStateChanged? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly OnStateChangedCtx _stateCtx = new();
+    private GCHandle? _stateCtxGcHandle;
 
     /// <summary>
     /// set a callback on state changed
     /// </summary>
     /// <param name="cb"></param>
     /// <returns></returns>
-    public MDKPlayer OnStateChanged(CallBackOnStateChanged cb)
+    public MDKPlayer OnStateChanged(CallBackOnStateChanged? cb)
     {
-        _stateCb = cb;
+        lock (_stateCtx.Lock)
+        {
+            _stateCtx.Callback = cb;
+            _stateCtxGcHandle ??= GCHandle.Alloc(_stateCtx);
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void Temp(MDK_State value, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnStateChanged>((nint)opaque)((State)value);
+                if (opaque == null) return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not OnStateChangedCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    ctx.Callback!.Invoke((State)value);
+                }
             }
             mdkStateChangedCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_stateCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_stateCb)),
+                opaque = (void*)(_stateCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_stateCtxGcHandle.Value)),
             };
             _p->onStateChanged(_p->@object, callback);
         }
@@ -620,6 +671,13 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate string CallBackOnSnapshot(IntPtr request, double position);
+    private class SnapshotCallBackCtx
+    {
+        public CallBackOnSnapshot? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly SnapshotCallBackCtx _snapshotCtx = new();
+    private GCHandle? _snapshotCtxGcHandle;
     /// <summary>
     /// take a snapshot from current renderer. The result is in bgra format, or null on failure.<br/>
     /// When `snapshot()` is called, redraw is scheduled for `vo_opaque`'s renderer, then renderer will take a snapshot in rendering thread.<br/>
@@ -628,20 +686,33 @@ public class MDKPlayer : IDisposable
     /// <param name="request"></param>
     /// <param name="cb"></param>
     /// <param name="voOpaque"></param>
-    public void Snapshot(IntPtr request, CallBackOnSnapshot cb, IntPtr voOpaque = 0)
+    public void Snapshot(IntPtr request, CallBackOnSnapshot? cb, IntPtr voOpaque = 0)
     {
-        _snapshotCb = cb;
+        lock (_snapshotCtx.Lock)
+        {
+            _snapshotCtx.Callback = cb;
+            _snapshotCtxGcHandle ??= GCHandle.Alloc(_snapshotCtx);
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static sbyte* Temp(mdkSnapshotRequest* request, double position, void* opaque)
             {
-                return (sbyte*)Marshal.StringToCoTaskMemUTF8(Marshal.GetDelegateForFunctionPointer<CallBackOnSnapshot>((nint)opaque)((nint)request, position));
+                if (opaque == null) return null;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SnapshotCallBackCtx ctx) return null;
+                lock (ctx.Lock)
+                {
+                    var ret = ctx.Callback!.Invoke((IntPtr)request, position);
+                    if (string.IsNullOrEmpty(ret)) return null;
+                    var retBytes = Methods.MDK_strdup(ret);
+                    return retBytes;
+                }
             }
             mdkSnapshotCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_snapshotCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_snapshotCb)),
+                opaque = (void*)(_snapshotCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_snapshotCtxGcHandle.Value)),
             };
             _p->snapshot(_p->@object, (mdkSnapshotRequest*)request, callback, (void*)voOpaque);
         }
@@ -922,6 +993,13 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate void CallBackOnRender(IntPtr voOpaque);
+    private class RenderCallbackCtx
+    {
+        public CallBackOnRender? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly RenderCallbackCtx _renderCtx = new();
+    private GCHandle? _renderCtxGcHandle;
     /// <summary>
     /// set a callback which is invoked when the vo coresponding to vo_opaque needs to update/draw content, e.g. when a new frame is received in the renderer.<br/>
     /// Also invoked in setVideoSurfaceSize(), setVideoViewport(), setAspectRatio() and rotate(), take care of dead lock in callback and above functions.<br/>
@@ -930,20 +1008,31 @@ public class MDKPlayer : IDisposable
     /// DO NOT call renderVideo() in the callback, otherwise will results in dead lock
     /// </summary>
     /// <param name="cb"></param>
-    public void SetRenderCallback(CallBackOnRender cb)
+    public void SetRenderCallback(CallBackOnRender? cb)
     {
-        _renderCb = cb;
+        lock (_renderCtx.Lock)
+        {
+            _renderCtx.Callback = cb;
+            _renderCtxGcHandle ??= GCHandle.Alloc(_renderCtx);
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void Temp(void* voOpaque, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnRender>((nint)opaque)((IntPtr)voOpaque);
+                if (opaque == null)
+                    return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not RenderCallbackCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    ctx.Callback!.Invoke((IntPtr)voOpaque);
+                }
             }
             mdkRenderCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_renderCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_renderCb)),
+                opaque = (void*)(_renderCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_renderCtxGcHandle.Value)),
             };
             _p->setRenderCallback(_p->@object, callback);
         }
@@ -962,6 +1051,13 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate void CallBackOnSeek(long ms);
+    private class SeekCallbackCtx
+    {
+        public CallBackOnSeek? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly SeekCallbackCtx _seekCtx = new();
+    private GCHandle? _seekCtxGcHandle;
     /// <summary>
     /// 
     /// </summary>
@@ -974,18 +1070,28 @@ public class MDKPlayer : IDisposable
     /// If error(io, demux, not decode) occured(ret &lt; 0, usually -1) or skipped because of unfinished previous seek(ret == -2), out of range(-4) or media unloaded(-3).</param>
     public void Seek(long position, SeekFlag flags, CallBackOnSeek? cb = null)
     {
-        _seekCb = cb;
+        lock (_seekCtx.Lock)
+        {
+            _seekCtx.Callback = cb;
+            _seekCtxGcHandle ??= GCHandle.Alloc(_seekCtx);
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void Temp(long ms, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnSeek>((nint)opaque)(ms);
+                if (opaque == null) return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SeekCallbackCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    ctx.Callback!.Invoke(ms);
+                }
             }
             mdkSeekCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_seekCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_seekCb)),
+                opaque = (void*)(_seekCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_seekCtxGcHandle.Value)),
             };
             _p->seekWithFlags(_p->@object, position, (MDKSeekFlag)flags, callback);
         }
@@ -1000,14 +1106,6 @@ public class MDKPlayer : IDisposable
     {
         Seek(position, SeekFlag.Default, cb);
     }
-
-    //public void SetPlaybackRate(float value)
-    //{
-    //    unsafe
-    //    {
-    //        p->setPlaybackRate(p->@object, value);
-    //    }
-    //}
 
     /// <summary>
     /// 
@@ -1103,6 +1201,13 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate void CallBackOnSwitchBitrate(bool a);
+    private class SwitchCallbackCtx
+    {
+        public CallBackOnSwitchBitrate? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly SwitchCallbackCtx _switchCtx = new();
+    private GCHandle? _switchCtxGcHandle;
 
     /// <summary>
     /// A new media will be played later
@@ -1112,18 +1217,28 @@ public class MDKPlayer : IDisposable
     /// <param name="cb">(true/false) called when finished/failed</param>
     public void SwitchBitrate(string url, long delay = -1, CallBackOnSwitchBitrate? cb = null)
     {
-        _switchCb = cb;
+        lock (_switchCtx.Lock)
+        {
+            _switchCtx.Callback = cb;
+            _switchCtxGcHandle ??= GCHandle.Alloc(_switchCtx);
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void Temp(byte value, void* opaque)
             {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnSwitchBitrate>((nint)opaque)(value != 0);
+                if (opaque == null) return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SwitchCallbackCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    ctx.Callback!.Invoke(value != 0);
+                }
             }
             SwitchBitrateCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_switchCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_switchCb)),
+                opaque = (void*)(_switchCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_switchCtxGcHandle.Value)),
             };
             var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
             _p->switchBitrate(_p->@object, urlUtf8, delay, callback);
@@ -1141,23 +1256,34 @@ public class MDKPlayer : IDisposable
     /// <returns>false if preload immediately</returns>
     public bool SwitchBitrateSingleConnection(string url, CallBackOnSwitchBitrate? cb = null)
     {
-        _switchCb = cb;
+        lock (_switchCtx.Lock)
+        {
+            _switchCtx.Callback = cb;
+            _switchCtxGcHandle ??= GCHandle.Alloc(_switchCtx);
+        }
         unsafe
         {
-            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static void Temp(byte value, void* opaque)
-            {
-                Marshal.GetDelegateForFunctionPointer<CallBackOnSwitchBitrate>((nint)opaque)(value != 0);
-            }
             SwitchBitrateCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_switchCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_switchCb)),
+                opaque = (void*)(_switchCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_switchCtxGcHandle.Value)),
             };
             var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
             var ret = _p->switchBitrateSingleConnection(_p->@object, urlUtf8, callback);
             Marshal.FreeCoTaskMem(urlUtf8);
             return ret != 0;
+
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+            static void Temp(byte value, void* opaque)
+            {
+                if (opaque == null) return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SwitchCallbackCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    ctx.Callback!.Invoke(value != 0);
+                }
+            }
         }
     }
 
@@ -1165,6 +1291,14 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate bool CallBackOnEvent(MediaEvent a);
+    private class EventCallbackCtx
+    {
+        public CallBackOnEvent? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly EventCallbackCtx _eventCtx = new();
+    // private GCHandle? _eventCtxGcHandle;
+
     /// <summary>
     /// Add/Remove a CallBackOnEvent listener, or remove listeners.
     /// </summary>
@@ -1173,14 +1307,16 @@ public class MDKPlayer : IDisposable
     /// <returns></returns>
     public MDKPlayer OnEvent(CallBackOnEvent? cb, IntPtr token = 0)
     {
+
         unsafe
         {
-            mdkMediaEventCallback callback = new();
-            lock (_eventMtx)
+            lock (_eventCtx.Lock)
             {
+                mdkMediaEventCallback callback = new();
                 if (cb == null)
                 {
-                    _p->onEvent(_p->@object, callback, (CallbackToken*)(token != IntPtr.Zero ? _eventCbKey[*(CallbackToken*)token] : 0));
+                    _p->onEvent(_p->@object, callback,
+                        (CallbackToken*)(token != IntPtr.Zero ? _eventCbKey[*(CallbackToken*)token] : 0));
                     if (token != IntPtr.Zero)
                     {
                         _eventCb.Remove(*(CallbackToken*)token);
@@ -1195,6 +1331,7 @@ public class MDKPlayer : IDisposable
                 else
                 {
                     _eventCb[_onEventK] = cb;
+
                     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
                     static byte Temp(mdkMediaEvent* me, void* opaque)
                     {
@@ -1210,6 +1347,7 @@ public class MDKPlayer : IDisposable
                         };
                         return (byte)(f(e) ? 1 : 0);
                     }
+
                     callback = new()
                     {
                         cb = &Temp,
@@ -1222,6 +1360,7 @@ public class MDKPlayer : IDisposable
                     {
                         *(CallbackToken*)token = t;
                     }
+
                     _onEventK++;
                 }
             }
@@ -1334,6 +1473,13 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate double CallBackOnSync();
+    private class SyncCallbackCtx
+    {
+        public CallBackOnSync? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly SyncCallbackCtx _syncCtx = new();
+    private GCHandle? _syncCtxGcHandle;
     /// <summary>
     /// 
     /// </summary>
@@ -1343,19 +1489,28 @@ public class MDKPlayer : IDisposable
     /// <returns></returns>
     public MDKPlayer OnSync(CallBackOnSync cb, int minInterval = 10)
     {
-        _syncCb = cb;
+        lock (_syncCtx.Lock)
+        {
+            _syncCtx.Callback = cb;
+            _syncCtxGcHandle ??= GCHandle.Alloc(_syncCtx);
+        }
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static double Temp(void* opaque)
             {
-                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnSync>((nint)opaque);
-                return f();
+                if (opaque == null) return 0;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SyncCallbackCtx ctx) return 0;
+                lock (ctx.Lock)
+                {
+                    return ctx.Callback!.Invoke();
+                }
             }
             mdkSyncCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_syncCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_syncCb)),
+                opaque = (void*)(_syncCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_syncCtxGcHandle.Value)),
             };
             _p->onSync(_p->@object, callback, minInterval);
         }
@@ -1399,6 +1554,14 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate int CallBackOnFrame4Video(VideoFrame frame, int track);
+    private class Frame4VideoCallbackCtx
+    {
+        public CallBackOnFrame4Video? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly Frame4VideoCallbackCtx _videoCtx = new();
+    private GCHandle? _videoCtxGcHandle;
+
     /// <summary>
     /// A callback to be invoked before delivering a frame to renderers. Frame can be VideoFrame and AudioFrame(NOT IMPLEMENTED).<br/>
     /// The callback can be used as a filter.<br/>
@@ -1407,25 +1570,35 @@ public class MDKPlayer : IDisposable
     /// </summary>
     /// <param name="cb">callback to be invoked. returns pending number of frames. callback parameter is input and output frame. if input frame is an invalid frame, output a pending frame.</param>
     /// <returns></returns>
-    public MDKPlayer OnFrame(CallBackOnFrame4Video cb)
+    public MDKPlayer OnFrame(CallBackOnFrame4Video? cb)
     {
+        lock (_videoCtx.Lock)
+        {
+            _videoCtx.Callback = cb;
+            _videoCtxGcHandle ??= GCHandle.Alloc(_videoCtx);
+        }
         unsafe
         {
-            _videoCb = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static int Temp(mdkVideoFrameAPI** pFrame, int track, void* opaque)
             {
-                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnFrame4Video>((nint)opaque);
-                VideoFrame frame = new(null);
-                frame.Attach(*pFrame);
-                var pendings = f(frame, track);
-                *pFrame = frame.Detach();
-                return pendings;
+                if (opaque == null) return 0;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not Frame4VideoCallbackCtx ctx) return 0;
+                lock (ctx.Lock)
+                {
+                    if (ctx.Callback == null) return 0;
+                    VideoFrame frame = new(null);
+                    frame.Attach(*pFrame);
+                    var pendings = ctx.Callback.Invoke(frame, track);
+                    *pFrame = frame.Detach();
+                    return pendings;
+                }
             }
             mdkVideoCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_videoCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_videoCb)),
+                opaque = (void*)(_videoCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_videoCtxGcHandle.Value)),
             };
             _p->onVideo(_p->@object, callback);
         }
@@ -1436,6 +1609,14 @@ public class MDKPlayer : IDisposable
     /// 
     /// </summary>
     public delegate int CallBackOnFrame4Audio(AudioFrame frame, int track);
+    private class Frame4AudioCallbackCtx
+    {
+        public CallBackOnFrame4Audio? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly Frame4AudioCallbackCtx _audioCtx = new();
+    private GCHandle? _audioCtxGcHandle;
+
     /// <summary>
     /// A callback to be invoked before delivering a frame to renderers. Frame can be VideoFrame and AudioFrame.<br/>
     /// The callback can be used as a filter.<br/>
@@ -1446,23 +1627,33 @@ public class MDKPlayer : IDisposable
     /// <returns></returns>
     public MDKPlayer OnFrame(CallBackOnFrame4Audio cb)
     {
+        lock (_audioCtx.Lock)
+        {
+            _audioCtx.Callback = cb;
+            _audioCtxGcHandle ??= GCHandle.Alloc(_audioCtx);
+        }
         unsafe
         {
-            _audioCb = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static int Temp(mdkAudioFrameAPI** pFrame, int track, void* opaque)
             {
-                var f = Marshal.GetDelegateForFunctionPointer<CallBackOnFrame4Audio>((nint)opaque);
-                AudioFrame frame = new(null);
-                frame.Attach(*pFrame);
-                var pendings = f(frame, track);
-                *pFrame = frame.Detach();
-                return pendings;
+                if (opaque == null) return 0;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not Frame4AudioCallbackCtx ctx) return 0;
+                lock (ctx.Lock)
+                {
+                    if (ctx.Callback == null) return 0;
+                    AudioFrame frame = new(null);
+                    frame.Attach(*pFrame);
+                    var pendings = ctx.Callback.Invoke(frame, track);
+                    *pFrame = frame.Detach();
+                    return pendings;
+                }
             }
             mdkAudioCallback callback = new()
             {
                 cb = &Temp,
-                opaque = (void*)(_audioCb == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(_audioCb)),
+                opaque = (void*)(_audioCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_audioCtxGcHandle.Value)),
             };
             _p->onAudio(_p->@object, callback);
         }
@@ -1493,6 +1684,29 @@ public class MDKPlayer : IDisposable
             {
                 Methods.mdkPlayerAPI_reset(pp, (byte)(_owner ? 1 : 0));
             }
+
+            _currentCtxGcHandle?.Free();
+            _currentCtxGcHandle = null;
+            _timeoutCtxGcHandle?.Free();
+            _timeoutCtxGcHandle = null;
+            _prepareCtxGcHandle?.Free();
+            _prepareCtxGcHandle = null;
+            _stateCtxGcHandle?.Free();
+            _stateCtxGcHandle = null;
+            _renderCtxGcHandle?.Free();
+            _renderCtxGcHandle = null;
+            _audioCtxGcHandle?.Free();
+            _audioCtxGcHandle = null;
+            _videoCtxGcHandle?.Free();
+            _videoCtxGcHandle = null;
+            _syncCtxGcHandle?.Free();
+            _syncCtxGcHandle = null;
+            _switchCtxGcHandle?.Free();
+            _switchCtxGcHandle = null;
+            _seekCtxGcHandle?.Free();
+            _seekCtxGcHandle = null;
+            _snapshotCtxGcHandle?.Free();
+            _snapshotCtxGcHandle = null;
         }
     }
 }
