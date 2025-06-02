@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
-namespace MDK.SDK.NET.Extensions;
+namespace MDK.SDK.NET;
 /// <summary>
 /// Player.Extensions
 /// </summary>
@@ -52,10 +48,10 @@ public static class PlayerExtensions
     /// Set HttpProxy When Playing Video Stream from URL
     /// </summary>
     /// <param name="player"></param>
-    /// <param name="http_proxy"></param>
-    public static void SetHttpProxy(this MDKPlayer player, string http_proxy)
+    /// <param name="httpProxy"></param>
+    public static void SetHttpProxy(this MDKPlayer player, string httpProxy)
     {
-        player.SetProperty("http_proxy", http_proxy);
+        player.SetProperty("http_proxy", httpProxy);
     }
 
     /// <summary>

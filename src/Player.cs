@@ -67,11 +67,15 @@ public class MDKPlayer : IDisposable
     /// If player object is still alive, setVideoSurfaceSize(-1, -1, ...) is preferred.<br/>
     /// If forget to call both foreignGLContextDestroyed() and setVideoSurfaceSize(-1, -1, ...) in the context, resources will be released in the next draw in the same context.  But the context may be destroyed later, then resource will never be released<br/>
     /// </summary>
-    public static void ForeignGLContextDestroyed()
+    public static void ForeignGlContextDestroyed()
     {
         Methods.MDK_foreignGLContextDestroyed();
     }
 
+    /// <summary>
+    /// mute or not
+    /// </summary>
+    /// <param name="value"></param>
     public void SetMute(bool value = true)
     {
         unsafe
@@ -81,6 +85,10 @@ public class MDKPlayer : IDisposable
         mute_ = value;
     }
 
+    /// <summary>
+    /// is audio muted
+    /// </summary>
+    /// <returns></returns>
     public bool IsMute()
     {
         return mute_;
@@ -143,9 +151,9 @@ public class MDKPlayer : IDisposable
     {
         unsafe
         {
-            var _url = Marshal.StringToCoTaskMemUTF8(url);
-            p->setMedia(p->@object, _url);
-            Marshal.FreeCoTaskMem(_url);
+            var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
+            p->setMedia(p->@object, urlUtf8);
+            Marshal.FreeCoTaskMem(urlUtf8);
         }
     }
 
@@ -168,6 +176,10 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// get current media url
+    /// </summary>
+    /// <returns></returns>
     public string Url()
     {
         unsafe
@@ -193,6 +205,10 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// set if preload media immediately after SetMedia() or Prepare() is called
+    /// </summary>
+    /// <param name="value"></param>
     public void SetPreloadImmediately(bool value = true)
     {
         unsafe
@@ -219,6 +235,9 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// a delegate for CurrentMediaChanged
+    /// </summary>
     public delegate void CallbackCurrentMediaChanged();
 
     /// <summary>
@@ -232,13 +251,13 @@ public class MDKPlayer : IDisposable
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static void temp(void* opaque)
+            static void Temp(void* opaque)
             {
                 Marshal.GetDelegateForFunctionPointer<CallbackCurrentMediaChanged>((nint)opaque)();
             }
             mdkCurrentMediaChangedCallback callback = new()
             {
-                cb = &temp,
+                cb = &Temp,
                 opaque = (void*)(current_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(current_cb_)),
             };
             p->currentMediaChanged(p->@object, callback);
@@ -307,6 +326,9 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// a delegate for SetTimeout
+    /// </summary>
     public delegate bool CallBackOnTimeout(long ms);
     /// <summary>
     /// callback ms: elapsed milliseconds<br/>
@@ -323,13 +345,13 @@ public class MDKPlayer : IDisposable
         {
             timeout_cb_ = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static byte temp(long ms, void* opaque)
+            static byte Temp(long ms, void* opaque)
             {
                 return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnTimeout>((nint)opaque)(ms) ? 1 : 0);
             }
             mdkTimeoutCallback callback = new()
             {
-                cb = &temp,
+                cb = &Temp,
                 opaque = (void*)(timeout_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(timeout_cb_)),
             };
             p->setTimeout(p->@object, ms, callback);
@@ -359,13 +381,13 @@ public class MDKPlayer : IDisposable
         {
             prepare_cb_ = cb;
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static byte temp(long position, bool* boost, void* opaque)
+            static byte Temp(long position, bool* boost, void* opaque)
             {
                 return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnPrepare>((nint)opaque)(position, (IntPtr)boost) ? 1 : 0);
             }
             mdkPrepareCallback callback = new()
             {
-                cb = &temp,
+                cb = &Temp,
                 opaque = (void*)(prepare_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(prepare_cb_)),
             };
             p->prepare(p->@object, startPosition, callback, (MDKSeekFlag)flags);
@@ -378,7 +400,7 @@ public class MDKPlayer : IDisposable
     /// You may get an invalid value if mediaInfo() is called immediately after `set(State::Playing)` or `prepare()` because media is still opening but not loaded , i.e.mediaStatus() has no MediaStatus::Loaded flag.<br/>
     /// A live stream's duration is 0 in prepare() callback or when MediaStatus::Loaded is added, then duration increases current read duration.
     /// </summary>
-    public MediaInfo? mediaInfo
+    public MediaInfo? MediaInfo
     {
         get
         {
@@ -386,7 +408,7 @@ public class MDKPlayer : IDisposable
             {
                 var info = p->mediaInfo(p->@object);
                 var ret = new MediaInfo();
-                MediaInfo.From_c(info, ref ret);
+                NET.MediaInfo.From_c(info, ref ret);
                 return ret;
             }
         }
@@ -413,6 +435,9 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// get PlaybackState
+    /// </summary>
     public PlaybackState? State
     {
         get
@@ -424,20 +449,29 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// a delegate for OnStateChanged
+    /// </summary>
     public delegate void CallBackOnStateChanged(State a);
+    
+    /// <summary>
+    /// set a callback on state changed
+    /// </summary>
+    /// <param name="cb"></param>
+    /// <returns></returns>
     public MDKPlayer OnStateChanged(CallBackOnStateChanged cb)
     {
         state_cb_ = cb;
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-            static void temp(MDK_State value, void* opaque)
+            static void Temp(MDK_State value, void* opaque)
             {
                 Marshal.GetDelegateForFunctionPointer<CallBackOnStateChanged>((nint)opaque)((State)value);
             }
             mdkStateChangedCallback callback = new()
             {
-                cb = &temp,
+                cb = &Temp,
                 opaque = (void*)(state_cb_ == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(state_cb_)),
             };
             p->onStateChanged(p->@object, callback);
@@ -459,12 +493,25 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// get MediaStatus
+    /// </summary>
     public MediaStatus MediaStatus
     {
         get { unsafe { return (MediaStatus)p->mediaStatus(p->@object); } }
     }
 
+    /// <summary>
+    /// a delegate for OnMediaStatus
+    /// </summary>
     public delegate bool CallBackOnMediaStatus(MediaStatus old, MediaStatus @new);
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="cb"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
     public MDKPlayer OnMediaStatus(CallBackOnMediaStatus cb, IntPtr token = 0)
     {
         unsafe
@@ -500,7 +547,7 @@ public class MDKPlayer : IDisposable
                         opaque = (void*)Marshal.GetFunctionPointerForDelegate(status_cb_[onStatus_k]),
                     };
                     CallbackToken t = 0;
-                    p->onMediaStatus(p->@object, callback, (ulong*)token);
+                    p->onMediaStatus(p->@object, callback, (CallbackToken*)token);
                     status_cb_key_[onStatus_k] = t;
                     if (token != 0)
                     {
