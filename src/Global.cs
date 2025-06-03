@@ -518,4 +518,13 @@ public class Global
             }
         }
     }
+
+    /// <summary>
+    /// Get MDK Version Int Number
+    /// </summary>
+    public static int MDK_VERSION_INT
+    {
+        get
+        { return (Methods.MDK_MAJOR << 16) | (Methods.MDK_MINOR << 8) | Methods.MDK_MICRO; }
+    }
 }

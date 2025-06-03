@@ -15,9 +15,9 @@ public partial struct AudioCodecParameters
 
     public long bit_rate;
 
-    public int profile;
+    public int profile = -99;
 
-    public int level;
+    public int level = -99;
 
     public float frame_rate;
 
@@ -36,6 +36,10 @@ public partial struct AudioCodecParameters
     public int block_align;
 
     public int frame_size;
+
+    public AudioCodecParameters()
+    {
+    }
 }
 
 public partial struct AudioStreamInfo
@@ -68,9 +72,9 @@ public partial struct VideoCodecParameters
 
     public long bit_rate;
 
-    public int profile;
+    public int profile = -99;
 
-    public int level;
+    public int level = -99;
 
     public float frame_rate;
 
@@ -95,6 +99,10 @@ public partial struct VideoCodecParameters
     public ColorSpace color_space;
 
     public byte dovi_profile;
+
+    public VideoCodecParameters()
+    {
+    }
 }
 
 public partial struct VideoStreamInfo
@@ -198,8 +206,14 @@ public partial struct MediaInfo
     /// </summary>
     public long start_time;
 
+    /// <summary>
+    /// ms. 0 for live streams. may change when playing a stream being recorded
+    /// </summary>
     public long duration;
 
+    /// <summary>
+    /// when loaded, e.g. in prepare callback, it's the value from container. when running, it's updated to the realtime value
+    /// </summary>
     public long bit_rate;
 
     /// <summary>

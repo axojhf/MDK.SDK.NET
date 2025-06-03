@@ -1,5 +1,6 @@
-using System.Runtime.InteropServices;
 using MDK.SDK.NET.Gen;
+using System.Runtime.InteropServices;
+using static MDK.SDK.NET.Gen.mdkDX11Resource;
 
 namespace MDK.SDK.NET;
 
@@ -36,7 +37,7 @@ public class VideoFrame : IDisposable
     /// <param name="pp">mdkVideoFrameAPI pointer.</param>
     internal unsafe VideoFrame(mdkVideoFrameAPI* pp)
     {
-        _p = pp;
+        _p = Methods.mdkVideoFrameAPI_ref(pp);
     }
 
     /// <summary>
@@ -246,3 +247,33 @@ public class VideoFrame : IDisposable
     }
 }
 
+/// <summary>
+/// 
+/// </summary>
+public struct DX11Resource
+{
+    /// <summary>
+    /// ID3D11Texture2D or ID3D11VideoDecoderOutputView as input, ID3D11Texture2D as output
+    /// </summary>
+    public IntPtr resource = IntPtr.Zero;
+    /// <summary>
+    /// subresource index for texture array, 0 otherwise
+    /// </summary>
+    public int subResource = 0;
+    /// <summary>
+    /// ID3D11Texture2D for each plane. plane[0] == resource. usually each plane is an array indexed by subResource<br/>
+    /// size = 4.
+    /// </summary>
+    public IntPtr[] plane = [];
+    /// <summary>
+    /// plane count
+    /// </summary>
+    public int planeCount = 0;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public DX11Resource()
+    {
+    }
+}

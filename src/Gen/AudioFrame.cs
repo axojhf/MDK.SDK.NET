@@ -100,10 +100,20 @@ namespace MDK.SDK.NET.Gen
 
     internal static unsafe partial class Methods
     {
-        [DllImport("mdk", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern mdkAudioFrameAPI* mdkAudioFrameAPI_new([NativeTypeName("enum MDK_SampleFormat")] MDK_SampleFormat format, int channels, int sampleRate, int samples);
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        internal static partial mdkAudioFrameAPI* mdkAudioFrameAPI_new([NativeTypeName("enum MDK_SampleFormat")] MDK_SampleFormat format, int channels, int sampleRate, int samples);
 
-        [DllImport("mdk", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void mdkAudioFrameAPI_delete([NativeTypeName("struct mdkAudioFrameAPI **")] mdkAudioFrameAPI** param0);
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        internal static partial void mdkAudioFrameAPI_delete(mdkAudioFrameAPI** param0);
+
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        internal static partial mdkAudioFrameAPI* mdkAudioFrameAPI_ref(mdkAudioFrameAPI* p);
+
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        internal static partial void mdkAudioFrameAPI_unref(mdkAudioFrameAPI** pp);
     }
 }

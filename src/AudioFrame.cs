@@ -18,7 +18,7 @@ public class AudioFrame : IDisposable
 
     internal unsafe AudioFrame(mdkAudioFrameAPI* pp)
     {
-        _p = pp;
+        _p = Methods.mdkAudioFrameAPI_ref(pp);
     }
 
     /// <summary>

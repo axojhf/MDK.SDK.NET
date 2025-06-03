@@ -6,10 +6,38 @@ namespace MDK.SDK.NET.Gen
     {
         public int size;
 
-        [NativeTypeName("ID3D11DeviceChild *")]
+        [NativeTypeName("struct ID3D11DeviceChild *")]
         public void* resource;
 
         public int subResource;
+
+        [NativeTypeName("struct ID3D11Texture2D *[4]")]
+        public _plane_e__FixedBuffer plane;
+
+        public int planeCount;
+
+        public partial struct ID3D11Texture2D
+        {
+        }
+
+        public unsafe partial struct _plane_e__FixedBuffer
+        {
+            public ID3D11Texture2D* e0;
+            public ID3D11Texture2D* e1;
+            public ID3D11Texture2D* e2;
+            public ID3D11Texture2D* e3;
+
+            public ref ID3D11Texture2D* this[int index]
+            {
+                get
+                {
+                    fixed (ID3D11Texture2D** pThis = &e0)
+                    {
+                        return ref pThis[index];
+                    }
+                }
+            }
+        }
     }
 
     internal unsafe partial struct mdkDX9Resource
@@ -182,6 +210,9 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkVideoBufferPool **, const mdkCUDAResource *, int, int)")]
         public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkCUDAResource*, int, int, byte> fromCUDA;
 
+        [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkDX11Resource *, struct ID3D11Device *)")]
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkDX11Resource*, void*, byte> getDX11;
+
         [NativeTypeName("bool (*)()")]
         public delegate* unmanaged[Cdecl]<byte> fromMetal;
 
@@ -197,7 +228,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("bool (*)(struct mdkVideoFrame *)")]
         public delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte> toHost;
 
-        [NativeTypeName("void *[10]")]
+        [NativeTypeName("void *[9]")]
         public _reserved_e__FixedBuffer reserved;
 
         public unsafe partial struct _reserved_e__FixedBuffer
@@ -211,7 +242,6 @@ namespace MDK.SDK.NET.Gen
             public void* e6;
             public void* e7;
             public void* e8;
-            public void* e9;
 
             public ref void* this[int index]
             {
@@ -236,6 +266,14 @@ namespace MDK.SDK.NET.Gen
         [LibraryImport("mdk")]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial void mdkVideoFrameAPI_delete([NativeTypeName("struct mdkVideoFrameAPI **")] mdkVideoFrameAPI** param0);
+
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        internal static partial mdkVideoFrameAPI* mdkVideoFrameAPI_ref(mdkVideoFrameAPI* p);
+
+        [LibraryImport("mdk")]
+        [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        internal static partial void mdkVideoFrameAPI_unref(mdkVideoFrameAPI** pp);
 
         [LibraryImport("mdk")]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
