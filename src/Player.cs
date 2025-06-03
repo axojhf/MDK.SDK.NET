@@ -902,6 +902,22 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
+    /// Set render API using a managed RenderAPI structure. This is a generic template method that accepts various RenderAPI structures
+    /// that implement IRenderAPI interface, calls their Pin() method, and uses AddrOfPinnedObject to get the pointer for setting the render API.
+    /// </summary>
+    /// <typeparam name="T">The type of RenderAPI structure that implements IRenderAPI interface</typeparam>
+    /// <param name="renderApi">The RenderAPI structure instance</param>
+    /// <param name="voOpaque">Video output opaque pointer</param>
+    /// <returns>This MDKPlayer instance for method chaining</returns>
+    // ReSharper disable once InconsistentNaming
+    public MDKPlayer SetRenderAPI<T>(T renderApi, IntPtr voOpaque = 0) where T : struct, IRenderAPI
+    {
+        using var pinnedHandle = renderApi.Pin();
+        var apiPtr = pinnedHandle.AddrOfPinnedObject();
+        return SetRenderAPI(apiPtr, voOpaque);
+    }
+
+    /// <summary>
     /// get render api. For offscreen rendering, may only api type be valid in setRenderAPI(), and other members are filled internally, and used by user after renderVideo()
     /// </summary>
     /// <param name="voOpaque"></param>

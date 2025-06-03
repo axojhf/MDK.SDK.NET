@@ -13,7 +13,10 @@ public enum RenderType
     D3D12 = 5,
 }
 
-public struct GLRenderAPI
+/// <summary>
+/// OpenGL RenderAPI
+/// </summary>
+public struct GLRenderAPI : IRenderAPI
 {
     /// <summary>
     /// if >=0, will draw in given fbo. no need to bind in user code
@@ -149,9 +152,21 @@ public struct GLRenderAPI
                 return (nint)ptr;
         }
     }
+
+    /// <summary>
+    /// Pins the internal API and returns a disposable GCHandle.
+    /// </summary>
+    /// <returns>A disposable GCHandle.</returns>
+    public readonly DisposableGCHandle Pin()
+    {
+        return new DisposableGCHandle(internalAPI, GCHandleType.Pinned);
+    }
 }
 
-public struct D3D11RenderAPI
+/// <summary>
+/// D3D11 RenderAPI
+/// </summary>
+public struct D3D11RenderAPI : IRenderAPI
 {
     public readonly RenderType Type { get { return (RenderType)internalAPI.type; } }
 
@@ -252,9 +267,21 @@ public struct D3D11RenderAPI
                 return (nint)ptr;
         }
     }
+
+    /// <summary>
+    /// Pins the internal API and returns a disposable GCHandle.
+    /// </summary>
+    /// <returns>A disposable GCHandle.</returns>
+    public readonly DisposableGCHandle Pin()
+    {
+        return new DisposableGCHandle(internalAPI, GCHandleType.Pinned);
+    }
 }
 
-public struct MetalRenderAPI
+/// <summary>
+/// Metal RenderAPI
+/// </summary>
+public struct MetalRenderAPI : IRenderAPI
 {
     public RenderType Type { get { return (RenderType)internalAPI.type; } }
 
@@ -380,9 +407,21 @@ public struct MetalRenderAPI
                 return (nint)ptr;
         }
     }
+
+    /// <summary>
+    /// Pins the internal API and returns a disposable GCHandle.
+    /// </summary>
+    /// <returns>A disposable GCHandle.</returns>
+    public readonly DisposableGCHandle Pin()
+    {
+        return new DisposableGCHandle(internalAPI, GCHandleType.Pinned);
+    }
 }
 
-public struct VulkanRenderAPI
+/// <summary>
+/// Vulkan RenderAPI
+/// </summary>
+public struct VulkanRenderAPI : IRenderAPI
 {
     private mdkVulkanRenderAPI internalAPI;
     public RenderType Type { get { return (RenderType)internalAPI.type; } }
@@ -646,9 +685,21 @@ public struct VulkanRenderAPI
                 return (nint)ptr;
         }
     }
+
+    /// <summary>
+    /// Pins the internal API and returns a disposable GCHandle.
+    /// </summary>
+    /// <returns>A disposable GCHandle.</returns>
+    public readonly DisposableGCHandle Pin()
+    {
+        return new DisposableGCHandle(internalAPI, GCHandleType.Pinned);
+    }
 }
 
-struct D3D12RenderAPI
+/// <summary>
+/// D3D12 RenderAPI
+/// </summary>
+public struct D3D12RenderAPI : IRenderAPI
 {
     public RenderType Type { get { return (RenderType)internalAPI.type; } }
 
@@ -803,4 +854,79 @@ struct D3D12RenderAPI
                 return (nint)ptr;
         }
     }
+
+    /// <summary>
+    /// Pins the internal API and returns a disposable GCHandle.
+    /// </summary>
+    /// <returns>A disposable GCHandle.</returns>
+    public readonly DisposableGCHandle Pin()
+    {
+        return new DisposableGCHandle(internalAPI, GCHandleType.Pinned);
+    }
 }
+
+/// <summary>
+/// Disposable GCHandle.
+/// </summary>
+public sealed class DisposableGCHandle : IDisposable
+{
+    private GCHandle _handle;
+
+    /// <summary>
+    /// Constructs a disposable GCHandle for the given target object.
+    /// </summary>
+    /// <param name="target">The object to pin.</param>
+    /// <param name="type">The type of handle to create.</param>
+    public DisposableGCHandle(object target, GCHandleType type = GCHandleType.Normal)
+    {
+        _handle = GCHandle.Alloc(target, type);
+    }
+
+    /// <summary>
+    /// Returns the address of the pinned object.
+    /// </summary>
+    /// <returns>The address of the pinned object.</returns>
+    public IntPtr AddrOfPinnedObject()
+    {
+        return _handle.AddrOfPinnedObject();
+    }
+
+    /// <summary>
+    /// Gets the target object.
+    /// </summary>
+    /// <returns>The target object.</returns>
+    public object? Target => _handle.Target;
+
+    /// <summary>
+    /// Disposes the GCHandle.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_handle.IsAllocated)
+        {
+            _handle.Free();
+        }
+        GC.SuppressFinalize(this);
+    }
+}
+
+
+/// <summary>
+/// Interface for RenderAPI structures that can be pinned in memory
+/// </summary>
+public interface IRenderAPI
+{
+    /// <summary>
+    /// Get RenderAPI Ptr For Player.SetRenderAPI()
+    /// </summary>
+    /// <returns></returns>
+    [Obsolete("Use Pin() instead")]
+    IntPtr GetPtr();
+
+    /// <summary>
+    /// Pin the structure in memory and return a GCHandle
+    /// </summary>
+    /// <returns>GCHandle that can be used to get the pinned object address</returns>
+    DisposableGCHandle Pin();
+}
+

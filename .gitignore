@@ -366,3 +366,5 @@ FodyWeavers.xsd
 /src/Properties/launchSettings.json
 /Example/Mdk.Avalonia.Example/Properties/launchSettings.json
 /Example/Mdk.WinUI3.Example/Properties/launchSettings.json
+.vscode/
+.DS_Store

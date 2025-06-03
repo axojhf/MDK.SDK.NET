@@ -20,8 +20,8 @@ internal class Mdkgl : OpenGlControlBase
     {
         // the options is only for Windows, if you want to use it on other platforms, please refer to the following url
         // https://github.com/wang-bin/mdk-sdk/wiki/Player-APIs#void-setdecodersmediatype-type-const-stdvectorstdstring-names
-        _player.SetAudioBackends(["OpenAL", "XAudio2"]);
-        _player.SetDecoders(MediaType.Video, ["MFT:d3d=11", "hap", "D3D11", "DXVA", "FFmpeg"]);
+        // _player.SetAudioBackends(["OpenAL", "XAudio2"]);
+        // _player.SetDecoders(MediaType.Video, ["MFT:d3d=11", "hap", "D3D11", "DXVA", "FFmpeg"]);
         _player.SetRenderCallback(_ =>
         {
             Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
@@ -30,7 +30,7 @@ internal class Mdkgl : OpenGlControlBase
 
     public State MdkState
     {
-        get => (State) (_player.State ?? PlaybackState.NotRunning);
+        get => (State)(_player.State ?? PlaybackState.NotRunning);
         set => _player.Set(value);
     }
 
@@ -59,8 +59,8 @@ internal class Mdkgl : OpenGlControlBase
     private PixelSize GetPixelSize()
     {
         var scaling = VisualRoot.RenderScaling;
-        return new PixelSize(Math.Max(1, (int) (Bounds.Width * scaling)),
-            Math.Max(1, (int) (Bounds.Height * scaling)));
+        return new PixelSize(Math.Max(1, (int)(Bounds.Width * scaling)),
+            Math.Max(1, (int)(Bounds.Height * scaling)));
     }
 
     protected override void OnOpenGlInit(GlInterface gl)
@@ -68,7 +68,7 @@ internal class Mdkgl : OpenGlControlBase
         base.OnOpenGlInit(gl);
         _getProcAddressCallback = (n, o) => { return gl.GetProcAddress(n); };
         _ra.GetProcAddress = Marshal.GetFunctionPointerForDelegate(_getProcAddressCallback);
-        _player.SetRenderAPI(_ra.GetPtr());
+        _player.SetRenderAPI(_ra);
     }
 
     protected override void OnOpenGlDeinit(GlInterface gl)

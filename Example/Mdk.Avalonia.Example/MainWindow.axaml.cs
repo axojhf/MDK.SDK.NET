@@ -15,12 +15,14 @@ public partial class MainWindow : Window
     private static FilePickerFileType VideoFileType { get; } = new("Video Files")
     {
         Patterns = ["*.mp4", "*.avi", "*.mkv", "*.wmv", "*.mov", "*.flv", "*.webm", "*.mkv"],
+        AppleUniformTypeIdentifiers = ["public.video"],
         MimeTypes = ["video/*"]
     };
 
     private static FilePickerFileType AudioFileType { get; } = new("Audio Files")
     {
         Patterns = ["*.mp3", "*.wav", "*.ogg", "*.flac", "*.m4a", "*.aac", "*.wma"],
+        AppleUniformTypeIdentifiers = ["public.audio"],
         MimeTypes = ["audio/*"]
     };
 
@@ -37,16 +39,18 @@ public partial class MainWindow : Window
         };
     }
 
-    private void SelectFile(object? sender, RoutedEventArgs e)
+    private async void SelectFile(object? sender, RoutedEventArgs e)
     {
         var storage = StorageProvider;
-        var files = storage.OpenFilePickerAsync(new FilePickerOpenOptions
+        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             FileTypeFilter = [VideoFileType, AudioFileType]
         });
-        if (files.Result.Count == 0)
+        if (files.Count == 0)
+        {
             return;
-        var file = files.Result[0];
+        }
+        var file = files[0];
         Player.MediaPath = file.Path.LocalPath;
         FilePath.Text = file.Path.LocalPath;
     }
