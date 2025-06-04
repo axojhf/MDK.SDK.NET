@@ -19,11 +19,10 @@ namespace Mdk.WinUI3.Example
         public MainWindow()
         {
             this.InitializeComponent();
-            _player.SetAudioBackends(["OpenAL", "XAudio2"]);
             _player.SetDecoders(MediaType.Video, ["MFT:d3d=11", "hap", "D3D11", "DXVA", "FFmpeg"]);
             _player.OnMediaStatus((old, @new) => old == @new || @new != MediaStatus.Loaded || true);
             var vid = ((IWinRTObject)swapChainPanel).NativeObject;
-            _player.SetRenderAPI(_ra.GetPtr(), vid.ThisPtr);
+            _player.SetRenderAPI(_ra, vid.ThisPtr);
             _player.UpdateNativeSurface(vid.ThisPtr);
         }
 
@@ -47,6 +46,10 @@ namespace Mdk.WinUI3.Example
             picker.FileTypeFilter.Add(".flv");
             picker.FileTypeFilter.Add(".webm");
             picker.FileTypeFilter.Add(".mkv");
+            picker.FileTypeFilter.Add(".mp3");
+            picker.FileTypeFilter.Add(".m4a");
+            picker.FileTypeFilter.Add(".flac");
+            picker.FileTypeFilter.Add(".wav");
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
             var file = await picker.PickSingleFileAsync();
