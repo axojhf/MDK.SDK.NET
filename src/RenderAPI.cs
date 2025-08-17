@@ -58,7 +58,7 @@ public struct GLRenderAPI : IRenderAPI
     }
 
     /// <summary>
-    /// default false. NOT IMPLENETED
+    /// default false.
     /// </summary>
     public byte Debug
     {
@@ -183,6 +183,7 @@ public struct D3D11RenderAPI : IRenderAPI
     /// <summary>
     /// rtv or texture. usually user can provide a texture from gui easly, no d3d code to create a view.<br/>
     /// optional. the render target(view). ID3D11RenderTargetView or ID3D11Texture2D. <br/>
+    /// can be texture 2d array, then starts from 0 after setRenderAPI(), and increases when renderVideo() renders a new frame(returned timestamp changes). <br/>
     /// can be null if context is not null. if not null, no need to set context
     /// </summary>
     public IntPtr Rtv
