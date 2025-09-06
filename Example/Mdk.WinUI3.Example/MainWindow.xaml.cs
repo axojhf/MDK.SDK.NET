@@ -24,6 +24,7 @@ namespace Mdk.WinUI3.Example
             var vid = ((IWinRTObject)swapChainPanel).NativeObject;
             _player.SetRenderAPI(_ra, vid.ThisPtr);
             _player.UpdateNativeSurface(vid.ThisPtr);
+            _player.Set(ColorSpace.ColorSpaceUnknown);
         }
 
         // Play

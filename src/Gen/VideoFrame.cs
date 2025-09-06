@@ -213,8 +213,11 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkDX11Resource *, struct ID3D11Device *)")]
         public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkDX11Resource*, void*, byte> getDX11;
 
-        [NativeTypeName("bool (*)()")]
-        public delegate* unmanaged[Cdecl]<byte> fromMetal;
+        [NativeTypeName("int (*)(struct mdkVideoFrame *)")]
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int> rotation;
+
+        [NativeTypeName("const char *(*)(struct mdkVideoFrame *, const char *, int *)")]
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, sbyte*, int*, sbyte*> metadata;
 
         [NativeTypeName("bool (*)()")]
         public delegate* unmanaged[Cdecl]<byte> fromVk;
@@ -228,7 +231,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("bool (*)(struct mdkVideoFrame *)")]
         public delegate* unmanaged[Cdecl]<mdkVideoFrame*, byte> toHost;
 
-        [NativeTypeName("void *[9]")]
+        [NativeTypeName("void *[8]")]
         public _reserved_e__FixedBuffer reserved;
 
         public unsafe partial struct _reserved_e__FixedBuffer
@@ -241,7 +244,6 @@ namespace MDK.SDK.NET.Gen
             public void* e5;
             public void* e6;
             public void* e7;
-            public void* e8;
 
             public ref void* this[int index]
             {

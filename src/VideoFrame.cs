@@ -1,5 +1,6 @@
 using MDK.SDK.NET.Gen;
 using System.Runtime.InteropServices;
+using System.Text;
 using static MDK.SDK.NET.Gen.mdkDX11Resource;
 
 namespace MDK.SDK.NET;
@@ -68,6 +69,39 @@ public class VideoFrame : IDisposable
             unsafe { return _p->timestamp(_p->@object); }
         }
         set { unsafe { _p->setTimestamp(_p->@object, value); } }
+    }
+
+    public int Rotation
+    {
+        get
+        {
+            if (!IsValid)
+                return -1;
+            unsafe { return _p->rotation(_p->@object); }
+        }
+    }
+
+    public byte[] Metadata(string key)
+    {
+        if (!IsValid)
+        {
+            return [];
+        }
+        unsafe
+        {
+            var bytes = Encoding.UTF8.GetBytes(key + char.MinValue);
+            int size = 0;
+            var ptr2 = &size;
+            fixed (byte* ptr = bytes)
+            {
+                var ret = _p->metadata(_p->@object, (sbyte*)ptr, ptr2);
+                if (ret == null || size <= 0)
+                    return [];
+                var data = new byte[size];
+                Marshal.Copy((nint)ret, data, 0, size);
+                return data;
+            }
+        }
     }
 
     /// <summary>

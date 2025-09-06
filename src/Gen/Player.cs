@@ -358,7 +358,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, mdkMediaStatusCallback, MDK_CallbackToken *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkMediaStatusCallback, ulong*, void> onMediaStatus;
 
-        [NativeTypeName("__AnonymousRecord_Player_L499_C5")]
+        [NativeTypeName("__AnonymousRecord_Player_L513_C5")]
         internal _Anonymous_e__Union Anonymous;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, struct mdkVideoFrameAPI *, void *)")]
@@ -373,32 +373,33 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, double, int, mdkSubtitleCallback)")]
         public delegate* unmanaged[Cdecl]<mdkPlayer*, double, int, mdkSubtitleCallback, void> subtitleText;
 
-        [UnscopedRef]
-        internal ref void* reserved2
+        [NativeTypeName("void (*)(struct mdkPlayer *, const float *, int, int)")]
+        public delegate* unmanaged[Cdecl]<mdkPlayer*, float*, int, int, void> setAudioMix;
+
+        public ref void* reserved2
         {
             get
             {
-                return ref Anonymous.reserved2;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.reserved2;
             }
         }
 
-        [UnscopedRef]
-        internal ref int size
+        public ref int size
         {
             get
             {
-                return ref Anonymous.size;
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.size, 1));
             }
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal unsafe partial struct _Anonymous_e__Union
+        public unsafe partial struct _Anonymous_e__Union
         {
             [FieldOffset(0)]
-            internal void* reserved2;
+            public void* reserved2;
 
             [FieldOffset(0)]
-            internal int size;
+            public int size;
         }
     }
 
