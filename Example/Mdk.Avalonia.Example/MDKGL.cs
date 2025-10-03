@@ -21,7 +21,7 @@ internal class Mdkgl : OpenGlControlBase
         // the options is only for Windows, if you want to use it on other platforms, please refer to the following url
         // https://github.com/wang-bin/mdk-sdk/wiki/Player-APIs#void-setdecodersmediatype-type-const-stdvectorstdstring-names
         // _player.SetAudioBackends(["OpenAL", "XAudio2"]);
-        // _player.SetDecoders(MediaType.Video, ["MFT:d3d=11", "hap", "D3D11", "DXVA", "FFmpeg"]);
+        _player.SetDecoders(MediaType.Video, ["MFT:d3d=11", "hap", "D3D11", "DXVA", "FFmpeg"]);
         _player.SetRenderCallback(_ =>
         {
             Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
