@@ -150,6 +150,9 @@ namespace MDK.SDK.NET.Gen
         internal delegate* unmanaged[Cdecl]<sbyte*, void*, void> cb;
 
         internal void* opaque;
+
+        [NativeTypeName("void (*)(double, double, const char **, int, void *)")]
+        internal delegate* unmanaged[Cdecl]<double, double, sbyte*, int, void*, void> cb2;
     }
 
     internal unsafe partial struct mdkPlayerAPI
@@ -376,19 +379,24 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, const float *, int, int)")]
         public delegate* unmanaged[Cdecl]<mdkPlayer*, float*, int, int, void> setAudioMix;
 
+        [NativeTypeName("void (*)(struct mdkPlayer *, mdkSubtitleCallback, bool, MDK_CallbackToken *)")]
+        public delegate* unmanaged[Cdecl]<mdkPlayer*, mdkSubtitleCallback, byte, ulong*, void> onSubtitleText;
+
+        [UnscopedRef]
         public ref void* reserved2
         {
             get
             {
-                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref this, 1)).Anonymous.reserved2;
+                return ref Anonymous.reserved2;
             }
         }
 
+        [UnscopedRef]
         public ref int size
         {
             get
             {
-                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.size, 1));
+                return ref Anonymous.size;
             }
         }
 

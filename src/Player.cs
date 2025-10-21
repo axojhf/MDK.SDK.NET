@@ -1566,6 +1566,53 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    public delegate void CallBackOnSubtitleText(double start, double end, List<string> text);
+    private class SubtitleTextCallbackCtx
+    {
+        public CallBackOnSubtitleText? Callback { get; set; }
+        public Lock Lock { get; } = new();
+    }
+    private readonly SubtitleTextCallbackCtx _subtitleTextCtx = new();
+    private GCHandle? _subtitleTextCtxGcHandle;
+
+    public MDKPlayer OnSubtitleText(CallBackOnSubtitleText cb, bool plainText = true)
+    {
+        lock (_subtitleTextCtx.Lock)
+        {
+            _subtitleTextCtx.Callback = cb;
+            _subtitleTextCtxGcHandle ??= GCHandle.Alloc(_subtitleTextCtx);
+        }
+        unsafe
+        {
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+            static void Temp(double start, double end, sbyte* texts, int textCount, void* opaque)
+            {
+                if (opaque == null) return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not SubtitleTextCallbackCtx ctx) return;
+                lock (ctx.Lock)
+                {
+                    List<string> list = new(textCount);
+                    var ptrs = (sbyte**)texts;
+                    for (var i = 0; i < textCount; i++)
+                    {
+                        var strPtr = (IntPtr)ptrs[i];
+                        var str = Marshal.PtrToStringUTF8(strPtr) ?? "";
+                        list.Add(str);
+                    }
+                    ctx.Callback!.Invoke(start, end, list);
+                }
+            }
+            mdkSubtitleCallback callback = new()
+            {
+                cb2 = &Temp,
+                opaque = (void*)(_subtitleTextCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_subtitleTextCtxGcHandle.Value)),
+            };
+            _p->onSubtitleText(_p->@object, callback, (byte)(plainText ? 1 : 0), null);
+        }
+        return this;
+    }
+
     /// <summary>
     /// 
     /// </summary>
