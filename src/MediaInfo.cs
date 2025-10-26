@@ -306,6 +306,8 @@ public partial struct MediaInfo
                 frame_size = codec.frame_size,
             };
             si.metadata = [];
+            e.key = null;
+            e.value = null;
             e.next = null;
             while (Methods.MDK_AudioStreamMetadata(csi, &e) != 0)
             {
@@ -348,6 +350,8 @@ public partial struct MediaInfo
                 dovi_profile = codec.dovi_profile
             };
             si.metadata = [];
+            e.key = null;
+            e.value = null;
             e.next = null;
             while (Methods.MDK_VideoStreamMetadata(csi, &e) != 0)
             {
@@ -379,6 +383,8 @@ public partial struct MediaInfo
             };
             si.metadata = [];
             //mdkStringMapEntry entry = default;//必须要new一个，不然会出现野指针
+            e.key = null;
+            e.value = null;
             e.next = null;
             while (Methods.MDK_SubtitleStreamMetadata(csi, &e) != 0)
             {
@@ -400,6 +406,8 @@ public partial struct MediaInfo
                 pi.stream.Add(cpi.stream[j]);
             }
             pi.metadata = [];
+            e.key = null;
+            e.value = null;
             e.next = null;
             while (Methods.MDK_ProgramMetadata(&cpi, &e) != 0)
             {
