@@ -247,9 +247,9 @@ namespace MDK.SDK.NET.Gen
         internal const int MDK_MINOR = 35;
 
         [NativeTypeName("#define MDK_MICRO 0")]
-        internal const int MDK_MICRO = 0;
+        internal const int MDK_MICRO = 1;
 
         [NativeTypeName("#define MDK_VERSION MDK_VERSION_INT(MDK_MAJOR, MDK_MINOR, MDK_MICRO)")]
-        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((35 & 0xff) << 8) | (0 & 0xff));
+        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((35 & 0xff) << 8) | (1 & 0xff));
     }
 }
