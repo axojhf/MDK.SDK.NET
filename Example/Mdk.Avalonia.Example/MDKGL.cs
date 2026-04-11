@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using MDK.SDK.NET;
 
 namespace Mdk.Avalonia.Example;
@@ -58,15 +59,14 @@ internal class Mdkgl : OpenGlControlBase
 
     private PixelSize GetPixelSize()
     {
-        var scaling = VisualRoot.RenderScaling;
-        return new PixelSize(Math.Max(1, (int)(Bounds.Width * scaling)),
-            Math.Max(1, (int)(Bounds.Height * scaling)));
+        var source = this.GetPresentationSource();
+        return source == null ? new PixelSize(1, 1) : PixelSize.FromSize(Bounds.Size, source.RenderScaling);
     }
 
     protected override void OnOpenGlInit(GlInterface gl)
     {
         base.OnOpenGlInit(gl);
-        _getProcAddressCallback = (n, o) => { return gl.GetProcAddress(n); };
+        _getProcAddressCallback = (n, o) => gl.GetProcAddress(n);
         _ra.GetProcAddress = Marshal.GetFunctionPointerForDelegate(_getProcAddressCallback);
         _player.SetRenderAPI(_ra);
     }
