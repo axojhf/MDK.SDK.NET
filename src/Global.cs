@@ -342,7 +342,13 @@ public enum LogLevel
 
 public class Global
 {
-    private static LogHandler? logHandler;
+    private sealed class LogHandlerContext
+    {
+        public LogHandler? Handler { get; set; }
+    }
+
+    private static readonly LogHandlerContext _logHandlerCtx = new();
+    private static GCHandle _logHandlerGcHandle;
 
     /// <summary>
     /// A callback function to process received log from MDK
@@ -361,21 +367,30 @@ public class Global
     /// <param name="handler">A callback function to process received log from MDK</param>
     public static void SetLogHandler(LogHandler? handler)
     {
-        logHandler = handler;
+        _logHandlerCtx.Handler = handler;
+        if (!_logHandlerGcHandle.IsAllocated)
+            _logHandlerGcHandle = GCHandle.Alloc(_logHandlerCtx);
         unsafe
         {
             [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
             static void temp(MDK_LogLevel logLevel, sbyte* log, void* opaque)
             {
+                if (opaque == null)
+                    return;
+                var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+                if (handle.Target is not LogHandlerContext ctx)
+                    return;
+                if (ctx.Handler is not { } h)
+                    return;
                 var s_log = Marshal.PtrToStringUTF8((nint)log);
                 if (s_log == null)
                     return;
-                Marshal.GetDelegateForFunctionPointer<LogHandler>((nint)opaque)((LogLevel)logLevel, s_log);
+                h((LogLevel)logLevel, s_log);
             }
             mdkLogHandler callback = new()
             {
                 cb = &temp,
-                opaque = logHandler != null ? (void*)Marshal.GetFunctionPointerForDelegate(logHandler) : (void*)0,
+                opaque = handler != null ? (void*)GCHandle.ToIntPtr(_logHandlerGcHandle) : (void*)0,
             };
             Methods.MDK_setLogHandler(callback);
         }
