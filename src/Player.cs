@@ -133,7 +133,7 @@ public class MDKPlayer : IDisposable
         unsafe
         {
             var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
-            _p->setMedia(_p->@object, urlUtf8);
+            _p->setMedia(_p->@object, (sbyte*)urlUtf8);
             Marshal.FreeCoTaskMem(urlUtf8);
         }
     }
@@ -153,7 +153,7 @@ public class MDKPlayer : IDisposable
         {
             var bytes = Encoding.UTF8.GetBytes(url + char.MinValue);
             fixed (byte* ptr = bytes)
-                _p->setMediaForType(_p->@object, (nint)ptr, (MDK_MediaType)type);
+                _p->setMediaForType(_p->@object, (sbyte*)ptr, (MDK_MediaType)type);
         }
     }
 
@@ -166,7 +166,7 @@ public class MDKPlayer : IDisposable
         unsafe
         {
             var url = _p->url(_p->@object);
-            return Marshal.PtrToStringUTF8(url) ?? "";
+            return Marshal.PtrToStringUTF8((nint)url) ?? "";
         }
     }
 
@@ -212,7 +212,7 @@ public class MDKPlayer : IDisposable
         {
             var bytes = Encoding.UTF8.GetBytes(url + char.MinValue);
             fixed (byte* ptr = bytes)
-                _p->setNextMedia(_p->@object, (nint)ptr, startPosition, (MDKSeekFlag)flags);
+                _p->setNextMedia(_p->@object, (sbyte*)ptr, startPosition, (MDKSeekFlag)flags);
         }
     }
 
@@ -294,7 +294,7 @@ public class MDKPlayer : IDisposable
             {
                 pdata[i++] = (sbyte*)Marshal.StringToCoTaskMemUTF8(names[i]);
             }
-            _p->setAudioBackends(_p->@object, (nint)pdata);
+            _p->setAudioBackends(_p->@object, pdata);
             for (int i = 0; i < names.Count; i++)
             {
                 Marshal.FreeCoTaskMem((IntPtr)pdata[i]);
@@ -752,7 +752,7 @@ public class MDKPlayer : IDisposable
         {
             var nameUtf8 = Marshal.StringToCoTaskMemUTF8(name);
             var valueUtf8 = Marshal.StringToCoTaskMemUTF8(value);
-            _p->setProperty(_p->@object, nameUtf8, valueUtf8);
+            _p->setProperty(_p->@object, (sbyte*)nameUtf8, (sbyte*)valueUtf8);
             Marshal.FreeCoTaskMem(nameUtf8);
             Marshal.FreeCoTaskMem(valueUtf8);
         }
@@ -768,7 +768,7 @@ public class MDKPlayer : IDisposable
         unsafe
         {
             var nameUtf8 = Marshal.StringToCoTaskMemUTF8(name);
-            var ret = Marshal.PtrToStringUTF8(_p->getProperty(_p->@object, nameUtf8)) ?? "";
+            var ret = Marshal.PtrToStringUTF8((nint)_p->getProperty(_p->@object, (sbyte*)nameUtf8)) ?? "";
             Marshal.FreeCoTaskMem(nameUtf8);
             return ret;
         }
@@ -1257,7 +1257,7 @@ public class MDKPlayer : IDisposable
                 opaque = (void*)(_switchCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_switchCtxGcHandle.Value)),
             };
             var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
-            _p->switchBitrate(_p->@object, urlUtf8, delay, callback);
+            _p->switchBitrate(_p->@object, (sbyte*)urlUtf8, delay, callback);
             Marshal.FreeCoTaskMem(urlUtf8);
         }
     }
@@ -1285,7 +1285,7 @@ public class MDKPlayer : IDisposable
                 opaque = (void*)(_switchCtx.Callback == null ? IntPtr.Zero : GCHandle.ToIntPtr(_switchCtxGcHandle.Value)),
             };
             var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
-            var ret = _p->switchBitrateSingleConnection(_p->@object, urlUtf8, callback);
+            var ret = _p->switchBitrateSingleConnection(_p->@object, (sbyte*)urlUtf8, callback);
             Marshal.FreeCoTaskMem(urlUtf8);
             return ret != 0;
 
@@ -1399,7 +1399,7 @@ public class MDKPlayer : IDisposable
         {
             var urlUtf8 = Marshal.StringToCoTaskMemUTF8(url);
             var formatUtf8 = Marshal.StringToCoTaskMemUTF8(format);
-            _p->record(_p->@object, urlUtf8, formatUtf8);
+            _p->record(_p->@object, (sbyte*)urlUtf8, (sbyte*)formatUtf8);
             Marshal.FreeCoTaskMem(urlUtf8);
             Marshal.FreeCoTaskMem(formatUtf8);
         }

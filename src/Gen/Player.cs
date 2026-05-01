@@ -167,31 +167,31 @@ namespace MDK.SDK.NET.Gen
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, float, void> setVolume;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char *)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, void> setMedia;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, void> setMedia;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char *, MDK_MediaType)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, MDK_MediaType, void> setMediaForType;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, MDK_MediaType, void> setMediaForType;
 
         [NativeTypeName("const char *(*)(struct mdkPlayer *)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr> url;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*> url;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, bool)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, byte, void> setPreloadImmediately;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char *, int64_t, enum MDKSeekFlag)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, long, MDKSeekFlag, void> setNextMedia;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, long, MDKSeekFlag, void> setNextMedia;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, mdkCurrentMediaChangedCallback)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkCurrentMediaChangedCallback, void> currentMediaChanged;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char **)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, void> setAudioBackends;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte**, void> setAudioBackends;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char **)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, void> setAudioDecoders;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte**, void> setAudioDecoders;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char **)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, void> setVideoDecoders;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte**, void> setVideoDecoders;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, int64_t, mdkTimeoutCallback)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, long, mdkTimeoutCallback, void> setTimeout;
@@ -290,10 +290,10 @@ namespace MDK.SDK.NET.Gen
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, long*, long> buffered;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char *, int64_t, SwitchBitrateCallback)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, long, SwitchBitrateCallback, void> switchBitrate;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, long, SwitchBitrateCallback, void> switchBitrate;
 
         [NativeTypeName("bool (*)(struct mdkPlayer *, const char *, SwitchBitrateCallback)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, SwitchBitrateCallback, byte> switchBitrateSingleConnection;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, SwitchBitrateCallback, byte> switchBitrateSingleConnection;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, mdkMediaEventCallback, MDK_CallbackToken *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkMediaEventCallback, ulong*, void> onEvent;
@@ -305,13 +305,13 @@ namespace MDK.SDK.NET.Gen
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkSnapshotRequest*, mdkSnapshotCallback, void*, void> snapshot;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char *, const char *)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, IntPtr, void> setProperty;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, sbyte*, void> setProperty;
 
         [NativeTypeName("const char *(*)(struct mdkPlayer *, const char *)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, IntPtr> getProperty;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, sbyte*> getProperty;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, const char *, const char *)")]
-        internal delegate* unmanaged[Cdecl]<mdkPlayer*, IntPtr, IntPtr, void> record;
+        internal delegate* unmanaged[Cdecl]<mdkPlayer*, sbyte*, sbyte*, void> record;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, int, int64_t, int64_t)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, int, long, long, void> setLoopRange;
@@ -361,7 +361,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("void (*)(struct mdkPlayer *, mdkMediaStatusCallback, MDK_CallbackToken *)")]
         internal delegate* unmanaged[Cdecl]<mdkPlayer*, mdkMediaStatusCallback, ulong*, void> onMediaStatus;
 
-        [NativeTypeName("__AnonymousRecord_Player_L513_C5")]
+        [NativeTypeName("__AnonymousRecord_Player_L514_C5")]
         internal _Anonymous_e__Union Anonymous;
 
         [NativeTypeName("void (*)(struct mdkPlayer *, struct mdkVideoFrameAPI *, void *)")]

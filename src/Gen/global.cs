@@ -124,7 +124,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("const char *")]
         internal sbyte* detail;
 
-        [NativeTypeName("__AnonymousRecord_global_L240_C5")]
+        [NativeTypeName("__AnonymousRecord_global_L253_C5")]
         internal _Anonymous_e__Union Anonymous;
 
         [UnscopedRef]
@@ -149,11 +149,11 @@ namespace MDK.SDK.NET.Gen
         internal partial struct _Anonymous_e__Union
         {
             [FieldOffset(0)]
-            [NativeTypeName("__AnonymousRecord_global_L241_C9")]
+            [NativeTypeName("__AnonymousRecord_global_L254_C9")]
             internal _decoder_e__Struct decoder;
 
             [FieldOffset(0)]
-            [NativeTypeName("__AnonymousRecord_global_L244_C9")]
+            [NativeTypeName("__AnonymousRecord_global_L257_C9")]
             internal _video_e__Struct video;
 
             internal partial struct _decoder_e__Struct
@@ -178,8 +178,7 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("const char *")]
         internal sbyte* value;
 
-        internal void* next;
-        //internal void* priv;
+        internal void* priv;
     }
 
     internal static unsafe partial class Methods
@@ -243,13 +242,13 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("#define MDK_MAJOR 0")]
         internal const int MDK_MAJOR = 0;
 
-        [NativeTypeName("#define MDK_MINOR 35")]
-        internal const int MDK_MINOR = 35;
+        [NativeTypeName("#define MDK_MINOR 36")]
+        internal const int MDK_MINOR = 36;
 
         [NativeTypeName("#define MDK_MICRO 0")]
-        internal const int MDK_MICRO = 1;
+        internal const int MDK_MICRO = 0;
 
         [NativeTypeName("#define MDK_VERSION MDK_VERSION_INT(MDK_MAJOR, MDK_MINOR, MDK_MICRO)")]
-        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((35 & 0xff) << 8) | (1 & 0xff));
+        internal const int MDK_VERSION = (((0 & 0xff) << 16) | ((36 & 0xff) << 8) | (0 & 0xff));
     }
 }

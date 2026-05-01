@@ -1,5 +1,39 @@
+using System.Runtime.CompilerServices;
+
 namespace MDK.SDK.NET.Gen
 {
+    // Forward declarations for typed render API handles
+    internal partial struct ID3D11DeviceContext { }
+    internal partial struct ID3D12CommandQueue { }
+    internal partial struct ID3D12Resource { }
+    internal partial struct ID3D12GraphicsCommandList { }
+
+    // D3D12_CPU_DESCRIPTOR_HANDLE: SIZE_T-sized struct (pointer-sized on each platform)
+    internal partial struct D3D12_CPU_DESCRIPTOR_HANDLE
+    {
+        internal nuint ptr;
+    }
+
+    // DXGI format & resource state enums (uint-sized)
+    internal enum DXGI_FORMAT : uint { }
+    internal enum D3D12_RESOURCE_STATES : uint { }
+
+    // Vulkan handle forward declarations
+    internal partial struct VkInstance_T { }
+    internal partial struct VkPhysicalDevice_T { }
+    internal partial struct VkDevice_T { }
+    internal partial struct VkQueue_T { }
+    internal partial struct VkImage_T { }
+    internal partial struct VkRenderPass_T { }
+    internal partial struct VkImageView_T { }
+    internal partial struct VkFramebuffer_T { }
+    internal partial struct VkSemaphore_T { }
+    internal partial struct VkCommandBuffer_T { }
+
+    // Vulkan enum forward declarations
+    internal enum VkFormat : int { }
+    internal enum VkImageLayout : int { }
+
     internal enum MDK_RenderAPI
     {
         MDK_RenderAPI_Invalid,
@@ -12,8 +46,6 @@ namespace MDK.SDK.NET.Gen
 
     internal partial struct mdkRenderAPI
     {
-        [NativeTypeName("enum MDK_RenderAPI")]
-        internal MDK_RenderAPI type;
     }
 
     internal unsafe partial struct mdkGLRenderAPI
@@ -50,8 +82,17 @@ namespace MDK.SDK.NET.Gen
 
         internal float version;
 
-        [NativeTypeName("int8_t[32]")]
-        internal fixed sbyte reserved[32];
+        [NativeTypeName("int8_t")]
+        internal sbyte depth;
+
+        [NativeTypeName("int8_t[31]")]
+        internal _reserved_e__FixedBuffer reserved;
+
+        [InlineArray(31)]
+        internal partial struct _reserved_e__FixedBuffer
+        {
+            internal sbyte e0;
+        }
     }
 
     internal unsafe partial struct mdkMetalRenderAPI
@@ -89,102 +130,14 @@ namespace MDK.SDK.NET.Gen
         internal uint depthStencilFormat;
     }
 
-    internal unsafe partial struct mdkVulkanRenderAPI
-    {
-        [NativeTypeName("enum MDK_RenderAPI")]
-        public MDK_RenderAPI type;
-
-        [NativeTypeName("VkInstance")]
-        public void* instance;
-
-        [NativeTypeName("VkPhysicalDevice")]
-        public void* phy_device;
-
-        [NativeTypeName("VkDevice")]
-        public void* device;
-
-        [NativeTypeName("VkQueue")]
-        public void* graphics_queue;
-
-        [NativeTypeName("VkImage")]
-        public void* rt;
-
-        [NativeTypeName("VkRenderPass")]
-        public void* render_pass;
-
-        public void* opaque;
-
-        [NativeTypeName("int (*)(void *, int *, int *, VkFormat *, VkImageLayout *)")]
-        public delegate* unmanaged[Cdecl]<void*, int*, int*, void*, void*, int> renderTargetInfo;
-
-        [NativeTypeName("int (*)(void *, VkImageView *, VkFramebuffer *, VkSemaphore *)")]
-        public delegate* unmanaged[Cdecl]<void*, void*, void*, void*, int> beginFrame;
-
-        [NativeTypeName("VkCommandBuffer (*)(void *)")]
-        public delegate* unmanaged[Cdecl]<void*, void*> currentCommandBuffer;
-
-        [NativeTypeName("void (*)(void *, VkSemaphore *)")]
-        public delegate* unmanaged[Cdecl]<void*, void*, void> endFrame;
-
-        [NativeTypeName("void *[2]")]
-        public _reserved_e__FixedBuffer reserved;
-
-        public int graphics_family;
-
-        public int compute_family;
-
-        public int transfer_family;
-
-        public int present_family;
-
-        [NativeTypeName("bool")]
-        public byte debug;
-
-        [NativeTypeName("uint8_t")]
-        public byte buffers;
-
-        public int device_index;
-
-        [NativeTypeName("uint32_t")]
-        public uint max_version;
-
-        public int gfx_queue_index;
-
-        public int transfer_queue_index;
-
-        public int compute_queue_index;
-
-        public int depth;
-
-        [NativeTypeName("uint8_t[32]")]
-        public fixed byte reserved_opt[32];
-
-        public unsafe partial struct _reserved_e__FixedBuffer
-        {
-            public void* e0;
-            public void* e1;
-
-            public ref void* this[int index]
-            {
-                get
-                {
-                    fixed (void** pThis = &e0)
-                    {
-                        return ref pThis[index];
-                    }
-                }
-            }
-        }
-    }
-
     internal unsafe partial struct mdkD3D11RenderAPI
     {
         [NativeTypeName("enum MDK_RenderAPI")]
         internal MDK_RenderAPI type;
 
-        internal void* context;
+        internal ID3D11DeviceContext* context;
 
-        internal void* rtv;
+        internal ID3D11DeviceChild* rtv;
 
         [NativeTypeName("void *[2]")]
         internal _reserved_e__FixedBuffer reserved;
@@ -224,29 +177,24 @@ namespace MDK.SDK.NET.Gen
         [NativeTypeName("enum MDK_RenderAPI")]
         internal MDK_RenderAPI type;
 
-        [NativeTypeName("ID3D12CommandQueue*")]
-        internal void* cmdQueue;
+        internal ID3D12CommandQueue* cmdQueue;
 
-        [NativeTypeName("ID3D12Resource*")]
-        internal void* rt;
+        internal ID3D12Resource* rt;
 
-        [NativeTypeName("CpuDescriptorHandle")]
-        internal void* rtvHandle;
+        internal D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 
-        [NativeTypeName("DXGI_FORMAT")]
-        internal uint colorFormat;
+        internal DXGI_FORMAT colorFormat;
 
-        [NativeTypeName("DXGI_FORMAT")]
-        internal uint depthStencilFormat;
+        internal DXGI_FORMAT depthStencilFormat;
 
         [NativeTypeName("const void *")]
         internal void* opaque;
 
         [NativeTypeName("ID3D12Resource *(*)(const void *, UINT *, UINT *, D3D12_RESOURCE_STATES *)")]
-        internal delegate* unmanaged[Cdecl]<void*, uint*, uint*, void*, void*> currentRenderTarget;
+        internal delegate* unmanaged[Cdecl]<void*, uint*, uint*, D3D12_RESOURCE_STATES*, ID3D12Resource*> currentRenderTarget;
 
         [NativeTypeName("ID3D12GraphicsCommandList *(*)(const void *)")]
-        internal delegate* unmanaged[Cdecl]<void*, void*> currentCommandList;
+        internal delegate* unmanaged[Cdecl]<void*, ID3D12GraphicsCommandList*> currentCommandList;
 
         [NativeTypeName("void *[1]")]
         internal _reserved2_e__FixedBuffer reserved2;
@@ -265,9 +213,9 @@ namespace MDK.SDK.NET.Gen
 
         internal unsafe partial struct _reserved2_e__FixedBuffer
         {
-            public void* e0;
+            internal void* e0;
 
-            public ref void* this[int index]
+            internal ref void* this[int index]
             {
                 get
                 {
@@ -277,6 +225,100 @@ namespace MDK.SDK.NET.Gen
                     }
                 }
             }
+        }
+    }
+
+    internal unsafe partial struct mdkVulkanRenderAPI
+    {
+        [NativeTypeName("enum MDK_RenderAPI")]
+        internal MDK_RenderAPI type;
+
+        [NativeTypeName("VkInstance")]
+        internal VkInstance_T* instance;
+
+        [NativeTypeName("VkPhysicalDevice")]
+        internal VkPhysicalDevice_T* phy_device;
+
+        [NativeTypeName("VkDevice")]
+        internal VkDevice_T* device;
+
+        [NativeTypeName("VkQueue")]
+        internal VkQueue_T* graphics_queue;
+
+        [NativeTypeName("VkImage")]
+        internal VkImage_T* rt;
+
+        [NativeTypeName("VkRenderPass")]
+        internal VkRenderPass_T* render_pass;
+
+        internal void* opaque;
+
+        [NativeTypeName("int (*)(void *, int *, int *, VkFormat *, VkImageLayout *)")]
+        internal delegate* unmanaged[Cdecl]<void*, int*, int*, VkFormat*, VkImageLayout*, int> renderTargetInfo;
+
+        [NativeTypeName("int (*)(void *, VkImageView *, VkFramebuffer *, VkSemaphore *)")]
+        internal delegate* unmanaged[Cdecl]<void*, VkImageView_T**, VkFramebuffer_T**, VkSemaphore_T**, int> beginFrame;
+
+        [NativeTypeName("VkCommandBuffer (*)(void *)")]
+        internal delegate* unmanaged[Cdecl]<void*, VkCommandBuffer_T*> currentCommandBuffer;
+
+        [NativeTypeName("void (*)(void *, VkSemaphore *)")]
+        internal delegate* unmanaged[Cdecl]<void*, VkSemaphore_T**, void> endFrame;
+
+        [NativeTypeName("void *[2]")]
+        internal _reserved_e__FixedBuffer reserved;
+
+        internal int graphics_family;
+
+        internal int compute_family;
+
+        internal int transfer_family;
+
+        internal int present_family;
+
+        [NativeTypeName("bool")]
+        internal byte debug;
+
+        [NativeTypeName("uint8_t")]
+        internal byte buffers;
+
+        internal int device_index;
+
+        [NativeTypeName("uint32_t")]
+        internal uint max_version;
+
+        internal int gfx_queue_index;
+
+        internal int transfer_queue_index;
+
+        internal int compute_queue_index;
+
+        internal int depth;
+
+        [NativeTypeName("uint8_t[32]")]
+        internal _reserved_opt_e__FixedBuffer reserved_opt;
+
+        internal unsafe partial struct _reserved_e__FixedBuffer
+        {
+            internal void* e0;
+            internal void* e1;
+
+            internal ref void* this[int index]
+            {
+                get
+                {
+                    fixed (void** pThis = &e0)
+                    {
+                        return ref pThis[index];
+                    }
+                }
+            }
+        }
+
+        [InlineArray(32)]
+        internal partial struct _reserved_opt_e__FixedBuffer
+        {
+            internal byte e0;
         }
     }
 }

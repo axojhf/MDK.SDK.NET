@@ -1,0 +1,3 @@
+[*.cs]
+# Gen layer fields are populated by native code via P/Invoke — never assigned in managed code
+dotnet_diagnostic.CS0649.severity = none

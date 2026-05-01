@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace MDK.SDK.NET.Gen
@@ -44,7 +45,13 @@ namespace MDK.SDK.NET.Gen
         internal int frame_size;
 
         [NativeTypeName("char[128]")]
-        internal fixed sbyte reserved[128];
+        internal _reserved_e__FixedBuffer reserved;
+
+        [InlineArray(128)]
+        internal partial struct _reserved_e__FixedBuffer
+        {
+            internal sbyte e0;
+        }
     }
 
     internal unsafe partial struct mdkAudioStreamInfo
@@ -106,7 +113,13 @@ namespace MDK.SDK.NET.Gen
         public byte dovi_profile;
 
         [NativeTypeName("char[123]")]
-        public fixed sbyte reserved[123];
+        internal _reserved_e__FixedBuffer reserved;
+
+        [InlineArray(123)]
+        internal partial struct _reserved_e__FixedBuffer
+        {
+            internal sbyte e0;
+        }
     }
 
     internal unsafe partial struct mdkVideoStreamInfo
@@ -169,7 +182,7 @@ namespace MDK.SDK.NET.Gen
         internal long end_time;
 
         [NativeTypeName("const char *")]
-        internal IntPtr title;
+        internal sbyte* title;
 
         [NativeTypeName("const void *")]
         internal void* priv;
@@ -203,7 +216,7 @@ namespace MDK.SDK.NET.Gen
         internal long size;
 
         [NativeTypeName("const char *")]
-        internal IntPtr format;
+        internal sbyte* format;
 
         internal int streams;
 

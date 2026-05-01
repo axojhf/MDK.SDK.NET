@@ -243,7 +243,7 @@ public partial struct MediaInfo
         mediaInfo.duration = cinfo->duration;
         mediaInfo.bit_rate = cinfo->bit_rate;
         mediaInfo.size = cinfo->size;
-        mediaInfo.format = Marshal.PtrToStringUTF8(cinfo->format) ?? "";
+        mediaInfo.format = Marshal.PtrToStringUTF8((nint)cinfo->format) ?? "";
         mediaInfo.streams = cinfo->streams;
         mediaInfo.metadata = [];
         mediaInfo.chapters = [];
@@ -268,9 +268,9 @@ public partial struct MediaInfo
                 start_time = cci->start_time,
                 end_time = cci->end_time
             };
-            if (cci->title != IntPtr.Zero)
+            if (cci->title != null)
             {
-                ci.title = Marshal.PtrToStringUTF8(cci->title) ?? "";
+                ci.title = Marshal.PtrToStringUTF8((nint)cci->title) ?? "";
             }
             mediaInfo.chapters.Add(ci);
         }
@@ -308,7 +308,7 @@ public partial struct MediaInfo
             si.metadata = [];
             e.key = null;
             e.value = null;
-            e.next = null;
+            e.priv = null;
             while (Methods.MDK_AudioStreamMetadata(csi, &e) != 0)
             {
                 var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
@@ -352,7 +352,7 @@ public partial struct MediaInfo
             si.metadata = [];
             e.key = null;
             e.value = null;
-            e.next = null;
+            e.priv = null;
             while (Methods.MDK_VideoStreamMetadata(csi, &e) != 0)
             {
                 var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
@@ -385,7 +385,7 @@ public partial struct MediaInfo
             //mdkStringMapEntry entry = default;//必须要new一个，不然会出现野指针
             e.key = null;
             e.value = null;
-            e.next = null;
+            e.priv = null;
             while (Methods.MDK_SubtitleStreamMetadata(csi, &e) != 0)
             {
                 var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
@@ -408,7 +408,7 @@ public partial struct MediaInfo
             pi.metadata = [];
             e.key = null;
             e.value = null;
-            e.next = null;
+            e.priv = null;
             while (Methods.MDK_ProgramMetadata(&cpi, &e) != 0)
             {
                 var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";

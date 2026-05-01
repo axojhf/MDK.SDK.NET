@@ -1,13 +1,26 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace MDK.SDK.NET.Gen
 {
+    internal partial struct ID3D11Device
+    {
+    }
+
+    internal partial struct ID3D11DeviceChild
+    {
+    }
+
+    internal partial struct IDirect3DSurface9
+    {
+    }
+
     internal unsafe partial struct mdkDX11Resource
     {
         public int size;
 
         [NativeTypeName("struct ID3D11DeviceChild *")]
-        public void* resource;
+        public ID3D11DeviceChild* resource;
 
         public int subResource;
 
@@ -44,8 +57,8 @@ namespace MDK.SDK.NET.Gen
     {
         public int size;
 
-        [NativeTypeName("IDirect3DSurface9 *")]
-        public void* surface;
+        [NativeTypeName("struct IDirect3DSurface9 *")]
+        public IDirect3DSurface9* surface;
     }
 
     internal unsafe partial struct mdkVAAPIResource
@@ -119,7 +132,7 @@ namespace MDK.SDK.NET.Gen
         public int height;
 
         [NativeTypeName("int[4]")]
-        public fixed int stride[4];
+        public _stride_e__FixedBuffer stride;
 
         [NativeTypeName("enum MDK_PixelFormat")]
         public MDK_PixelFormat format;
@@ -151,6 +164,12 @@ namespace MDK.SDK.NET.Gen
                     }
                 }
             }
+        }
+
+        [InlineArray(4)]
+        public partial struct _stride_e__FixedBuffer
+        {
+            public int e0;
         }
     }
 
@@ -211,7 +230,7 @@ namespace MDK.SDK.NET.Gen
         public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkVideoBufferPool**, mdkCUDAResource*, int, int, byte> fromCUDA;
 
         [NativeTypeName("bool (*)(struct mdkVideoFrame *, mdkDX11Resource *, struct ID3D11Device *)")]
-        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkDX11Resource*, void*, byte> getDX11;
+        public delegate* unmanaged[Cdecl]<mdkVideoFrame*, mdkDX11Resource*, ID3D11Device*, byte> getDX11;
 
         [NativeTypeName("int (*)(struct mdkVideoFrame *)")]
         public delegate* unmanaged[Cdecl]<mdkVideoFrame*, int> rotation;
