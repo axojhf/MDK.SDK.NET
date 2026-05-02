@@ -107,7 +107,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// Set frame rate, frames per seconds
+    /// Set frame rate, frames per seconds. Useful for videos without audio and timestamp.
     /// </summary>
     /// <param name="value">
     /// frame rate
@@ -125,7 +125,9 @@ public class MDKPlayer : IDisposable
 
     /// <summary>
     /// Set a new media url.  If url changed, will stop current playback, and reset active tracks, external tracks set by setMedia(url, type)<br/>
-    /// MUST call setActiveTracks() after setMedia(), otherwise the 1st track in the media is used
+    /// MUST call setActiveTracks() after setMedia(), otherwise the 1st track in the media is used<br/>
+    /// Supported protocols: FFmpeg protocols, Android(content, android.resource, assets), iOS(assets-library), UWP(winrt), mem(mem:addr+size), stream(see appendBuffer).<br/>
+    /// A url query <c>mdkopt=avformat&amp;...</c> will be treated as ffmpeg avformat options.
     /// </summary>
     /// <param name="url"></param>
     public void SetMedia(string url)
@@ -142,6 +144,7 @@ public class MDKPlayer : IDisposable
     /// Set an individual source as track of `type`, e.g. audio track file, external subtile file. **MUST** be after main media `setMedia(url)`.<br/>
     /// If url is empty, use `type` tracks in MediaType::Video url.<br/>
     /// The url can contains other track types, e.g.you can load an external audio/subtitle track from a video file, and use `setActiveTracks()` to select a track.<br/>
+    /// To switch back to embedded(internal) tracks, disable external track first via <c>setMedia(nullptr, type)</c>, then call <c>setActiveTracks(type, {0})</c>.<br/>
     ///  Note: because of filesystem restrictions on some platforms(iOS, macOS, uwp), and unable to access files in a sandbox, so you have to load subtitle files manually yourself via this function.
     /// <para>examples: set subtitle file: <code>setMedia("name.ass", MediaType::Subtitle)</code></para>
     /// </summary>
@@ -171,8 +174,8 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// iff media url is "stream:"
-    /// setTimeout can abort current stream playback
+    /// When media url protocol is "stream:", i.e. <c>setMedia("stream:empty_or_any_string")</c>, player is in stream playback mode, and user must provide data via this method.<br/>
+    /// setTimeout can abort current stream playback if timedout to read data from user.
     /// </summary>
     /// <param name="data"></param>
     /// <param name="size"></param>
@@ -282,7 +285,12 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// backends can be: AudioQueue(Apple only), OpenSL, AudioTrack(Android only), ALSA(linux only), XAudio2(Windows only), OpenAL
+    /// Set a list of audio renderer implementations. Available backends:
+    /// <para>Apple: AudioQueue(default), OpenAL</para>
+    /// <para>Android: AAudio(default since 0.36.0), OpenSL, AudioTrack</para>
+    /// <para>OHOS: OHAudio(default), OpenSL</para>
+    /// <para>Windows: XAudio2(default), DirectSound</para>
+    /// <para>Linux: PulseAudio(default), ALSA</para>
     /// </summary>
     /// <param name="names"></param>
     public void SetAudioBackends(List<string> names)
@@ -303,7 +311,10 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// // see https://github.com/wang-bin/mdk-sdk/wiki/Player-APIs#void-setdecodersmediatype-type-const-stdvectorstdstring-names
+    /// Try decoders by name(case sensitive) in the given order and select it if works for current media. Can be called at anytime. When state is Playing, new decoders will be applied immediately.<br/>
+    /// names can contain decoder options/properties separated by ':' and in key=value pattern, e.g. <c>"MFT:d3d=11"</c>.<br/>
+    /// If a decoder is not found, will try to load a dynamic plugin <c>mdk-$name</c>.<br/>
+    /// See https://github.com/wang-bin/mdk-sdk/wiki/Player-APIs#void-setdecodersmediatype-type-const-stdvectorstdstring-names
     /// </summary>
     /// <param name="type"></param>
     /// <param name="names"></param>
@@ -392,6 +403,7 @@ public class MDKPlayer : IDisposable
     private GCHandle? _prepareCtxGcHandle;
     /// <summary>
     /// Preload a media and then becomes State::Paused.<br/>
+    /// Must ensure playback is stopped before prepare() or new media: set(State::Stopped) + waitFor(State::Stopped) + prepare().<br/>
     /// To play a media from a given position, call prepare(ms) then set(State::Playing)<br/>
     /// For fast seek(has flag SeekFlag::Fast), the first frame is a key frame whose timestamp >= startPosition<br/>
     /// For accurate seek(no flag SeekFlag::Fast), the first frame is the nearest frame whose timestamp &lt;= startPosition, but the position passed to callback is the key frame position &lt;= startPosition
@@ -559,10 +571,10 @@ public class MDKPlayer : IDisposable
     public delegate bool CallBackOnMediaStatus(MediaStatus old, MediaStatus @new);
 
     /// <summary>
-    /// 
+    /// Add/Remove a callback or clear all callbacks for MediaStatus change.
     /// </summary>
-    /// <param name="cb"></param>
-    /// <param name="token"></param>
+    /// <param name="cb">the callback. return true. null to clear callbacks.</param>
+    /// <param name="token">see https://github.com/wang-bin/mdk-sdk/wiki/Types#callbacktoken</param>
     /// <returns></returns>
     public MDKPlayer OnMediaStatus(CallBackOnMediaStatus? cb, IntPtr token = 0)
     {
@@ -743,6 +755,20 @@ public class MDKPlayer : IDisposable
     /// <para>"demux.buffer.ranges": default "0". set a positive integer to enable demuxer's packet cache(if protocol is listed in property "demux.buffer.protocols"), the value is cache ranges count. Cache is useful for network streams, download data only once(if a cache range is not dropped), speedup seeking. Cache ranges are increased by seeking to a uncached position, decreased by merging ranges which are overlapped and LRU algorithm.</para>
     /// <para>"demux.buffer.protocols": default is "http,https". only these protocols will enable demuxer cache.</para>
     /// <para>"demux.max_errors": continue to demux the stream if error count is less than this value. same as global option "demuxer.max_errors"</para>
+    /// <para>"timeout": timeout in milliseconds. Will unload media if timeout occurs.</para>
+    /// <para>"speed", "playbackRate": same as <see cref="PlaybackRate"/>.</para>
+    /// <para>"loop": same as <see cref="SetLoop"/>.</para>
+    /// <para>"fps", "frameRate": same as <see cref="SetFrameRate"/>.</para>
+    /// <para>"volume": same as <see cref="SetVolume"/>.</para>
+    /// <para>"mute": same as <see cref="SetMute"/>.</para>
+    /// <para>"audio.tracks": track list "T1,T2,...", same as <c>setActiveTracks(MediaType::Audio, {T1, T2, ...})</c>.</para>
+    /// <para>"video.tracks": track list "T1,T2,...", same as <c>setActiveTracks(MediaType::Video, {T1, T2, ...})</c>.</para>
+    /// <para>"subtitle.tracks": track list "T1,T2,...", same as <c>setActiveTracks(MediaType::Subtitle, {T1, T2, ...})</c>.</para>
+    /// <para>"avformat.input": force input format. Useful for h264 raw streams over udp.</para>
+    /// <para>"avsync.audio": set "false" to sync video to a steady clock.</para>
+    /// <para>"subtitle.size": non-bitmap subtitle resolution. "video"(default) uses video frame size, "fit" keeps aspect ratio scaled to renderer size, otherwise uses renderer size.</para>
+    /// <para>"subtitle.ass.regions.max": int value, default is 1. split ASS rgb texture into smaller textures to reduce gpu bandwidth.</para>
+    /// <para>"subtitle.ass.regions.debug": 0(default) or 1. visualize text and ass rgb texture regions.</para>
     /// </summary>
     /// <param name="name"></param>
     /// <param name="value"></param>
@@ -759,10 +785,10 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// Get additional property value.
     /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
+    /// <param name="name">property name</param>
+    /// <returns>property value, or empty string if not found</returns>
     public string Property(string name)
     {
         unsafe
@@ -933,6 +959,7 @@ public class MDKPlayer : IDisposable
 
     /// <summary>
     /// Render the next or current(redraw) frame. Foreign render context only (i.e. not created by createSurface()/updateNativeSurface()).<br/>
+    /// If called before the first frame is decoded, will clear render target to ensure render target has no garbage data.<br/>
     /// OpenGL: Can be called in multiple foreign contexts for the same vo_opaque.
     /// </summary>
     /// <param name="voOpaque"></param>
@@ -975,10 +1002,10 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// Set video effect. See https://github.com/wang-bin/mdk-sdk/wiki/Types#enum-videoeffect
     /// </summary>
-    /// <param name="effect"></param>
-    /// <param name="value"></param>
+    /// <param name="effect">video effect type</param>
+    /// <param name="value">effect dependent float value or float array</param>
     /// <param name="voOpaque"></param>
     public void Set(VideoEffect effect, IntPtr value, IntPtr voOpaque = 0)
     {
@@ -989,7 +1016,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// Set output color space.
+    /// Set output color space. To render multiple HDR and SDR videos at the same time, choose ColorSpaceBT2100_PQ and ensure your gui toolkit is running in hdr10 colorspace.
     /// </summary>
     /// <param name="value">
     /// <para>invalid (ColorSpaceUnknown): renderer will try to use the value of decoded frame, and will send hdr10 metadata when possible. i.e. hdr videos will enable hdr display. Currently only supported by metal, and `MetalRenderAPI.layer` must be a `CAMetalLayer` ([example](https://github.com/wang-bin/swift-mdk/blob/master/Player.swift#L184))</para>
@@ -1006,7 +1033,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for SetRenderCallback
     /// </summary>
     public delegate void CallBackOnRender(IntPtr voOpaque);
     private class RenderCallbackCtx
@@ -1064,7 +1091,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for Seek
     /// </summary>
     public delegate void CallBackOnSeek(long ms);
     private class SeekCallbackCtx
@@ -1075,7 +1102,7 @@ public class MDKPlayer : IDisposable
     private readonly SeekCallbackCtx _seekCtx = new();
     private GCHandle? _seekCtxGcHandle;
     /// <summary>
-    /// 
+    /// Seek to a given position.
     /// </summary>
     /// <param name="position">seek target. if flags has SeekFlag::Frame, pos is frame count, otherwise it's milliseconds.<br/>
     /// If pos > media time range, e.g.INT64_MAX, will seek to the last frame of media for SeekFlag::AnyFrame, and the last key frame of media for SeekFlag::Fast.<br/>
@@ -1124,7 +1151,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// Get or set playback speed. FFmpeg atempo filter is required. Value >= 0.5, 1.0 is original speed.
     /// </summary>
     public float PlaybackRate
     {
@@ -1170,10 +1197,10 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// get buffered undecoded data duration and size
+    /// Get buffered undecoded data duration and size.
     /// </summary>
-    /// <param name="bytes"></param>
-    /// <returns>buffered data(packets) duration</returns>
+    /// <param name="bytes">output: buffered bytes</param>
+    /// <returns>buffered data(packets) duration in milliseconds</returns>
     public long Buffed(IntPtr bytes = 0)
     {
         unsafe
@@ -1304,7 +1331,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for OnEvent
     /// </summary>
     public delegate bool CallBackOnEvent(MediaEvent a);
     private class EventCallbackCtx
@@ -1415,7 +1442,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for OnLoop
     /// </summary>
     public delegate void CallBackOnLoop(int count);
     /// <summary>
@@ -1486,7 +1513,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for OnSync
     /// </summary>
     public delegate double CallBackOnSync();
     private class SyncCallbackCtx
@@ -1497,7 +1524,7 @@ public class MDKPlayer : IDisposable
     private readonly SyncCallbackCtx _syncCtx = new();
     private GCHandle? _syncCtxGcHandle;
     /// <summary>
-    /// 
+    /// Set custom sync callback as clock.
     /// </summary>
     /// <param name="cb">a callback invoked when about to render a frame. return expected current playback position(seconds), e.g. DBL_MAX(TimestampEOS) indicates render video frame ASAP.
     /// sync callback clock should handle pause, resume, seek and seek finish events</param>
@@ -1535,10 +1562,10 @@ public class MDKPlayer : IDisposable
 
 
     /// <summary>
-    /// 
+    /// Get subtitle text. Only for text based subtitle, e.g. ass, srt.
     /// </summary>
-    /// <param name="time"></param>
-    /// <param name="style"></param>
+    /// <param name="time">time in second. if &lt; 0, get currently rendered text</param>
+    /// <param name="style">ass style option. 0: no style, plain text. 1: ass style. 2: full ass style</param>
     /// <returns></returns>
     public string SubtitleText(double time = -1, int style = 0)
     {
@@ -1566,6 +1593,9 @@ public class MDKPlayer : IDisposable
         }
     }
 
+    /// <summary>
+    /// a delegate for OnSubtitleText
+    /// </summary>
     public delegate void CallBackOnSubtitleText(double start, double end, List<string> text);
     private class SubtitleTextCallbackCtx
     {
@@ -1575,6 +1605,12 @@ public class MDKPlayer : IDisposable
     private readonly SubtitleTextCallbackCtx _subtitleTextCtx = new();
     private GCHandle? _subtitleTextCtxGcHandle;
 
+    /// <summary>
+    /// Subtitle text callback invoked when new text is ready to render.
+    /// </summary>
+    /// <param name="cb">callback with start time, end time, and subtitle text lines</param>
+    /// <param name="plainText">true to get plain text, false for styled text</param>
+    /// <returns></returns>
     public MDKPlayer OnSubtitleText(CallBackOnSubtitleText cb, bool plainText = true)
     {
         lock (_subtitleTextCtx.Lock)
@@ -1614,7 +1650,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for OnFrame
     /// </summary>
     public delegate int CallBackOnFrame4Video(VideoFrame frame, int track);
     private class Frame4VideoCallbackCtx
@@ -1629,7 +1665,9 @@ public class MDKPlayer : IDisposable
     /// A callback to be invoked before delivering a frame to renderers. Frame can be VideoFrame and AudioFrame(NOT IMPLEMENTED).<br/>
     /// The callback can be used as a filter.<br/>
     /// TODO: frames not in host memory<br/>
-    /// For most filters, 1 input frame generates 1 output frame, then return 0.
+    /// For most filters, 1 input frame generates 1 output frame, then return 0.<br/>
+    /// WARNING: calling set(State::Stopped) in the callback may result in a dead lock.<br/>
+    /// If a video decoder has property "sei=1", then <c>frame.metadata(".sei.$type")</c> returns rbsp data of SEI type if exists.
     /// </summary>
     /// <param name="cb">callback to be invoked. returns pending number of frames. callback parameter is input and output frame. if input frame is an invalid frame, output a pending frame.</param>
     /// <returns></returns>
@@ -1669,7 +1707,7 @@ public class MDKPlayer : IDisposable
     }
 
     /// <summary>
-    /// 
+    /// a delegate for OnFrame
     /// </summary>
     public delegate int CallBackOnFrame4Audio(AudioFrame frame, int track);
     private class Frame4AudioCallbackCtx
