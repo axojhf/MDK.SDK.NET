@@ -454,6 +454,9 @@ public class MDKPlayer : IDisposable
             unsafe
             {
                 var info = _p->mediaInfo(_p->@object);
+                if (info == null)
+                    return null;
+
                 var ret = new MediaInfo();
                 NET.MediaInfo.From_c(info, ref ret);
                 return ret;

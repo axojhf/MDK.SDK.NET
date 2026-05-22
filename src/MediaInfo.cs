@@ -9,7 +9,7 @@ public partial struct AudioCodecParameters
 
     public uint codec_tag;
 
-    public IntPtr extra_data;
+    public byte[] extra_data;
 
     public int extra_data_size;
 
@@ -39,6 +39,8 @@ public partial struct AudioCodecParameters
 
     public AudioCodecParameters()
     {
+        codec = "";
+        extra_data = [];
     }
 }
 
@@ -55,6 +57,12 @@ public partial struct AudioStreamInfo
     public Dictionary<string, string> metadata;
 
     public AudioCodecParameters codec;
+
+    public AudioStreamInfo()
+    {
+        metadata = [];
+        codec = new();
+    }
 }
 
 public partial struct VideoCodecParameters
@@ -66,7 +74,7 @@ public partial struct VideoCodecParameters
     /// <summary>
     /// without padding data
     /// </summary>
-    public IntPtr extra_data;
+    public byte[] extra_data;
 
     public int extra_data_size;
 
@@ -102,6 +110,9 @@ public partial struct VideoCodecParameters
 
     public VideoCodecParameters()
     {
+        codec = "";
+        extra_data = [];
+        format_name = "";
     }
 }
 
@@ -133,9 +144,16 @@ public partial struct VideoStreamInfo
     public byte[] image_data;
 
     public int image_size;
+
+    public VideoStreamInfo()
+    {
+        metadata = [];
+        codec = new();
+        image_data = [];
+    }
 }
 
-public unsafe partial struct SubtitleCodecParameters
+public partial struct SubtitleCodecParameters
 {
     public string codec;
 
@@ -144,7 +162,7 @@ public unsafe partial struct SubtitleCodecParameters
     /// <summary>
     /// without padding data
     /// </summary>
-    public IntPtr extra_data;
+    public byte[] extra_data;
 
     public int extra_data_size;
 
@@ -157,6 +175,12 @@ public unsafe partial struct SubtitleCodecParameters
     /// display height. bitmap subtitles only
     /// </summary>
     public int height;
+
+    public SubtitleCodecParameters()
+    {
+        codec = "";
+        extra_data = [];
+    }
 }
 
 public partial struct SubtitleStreamInfo
@@ -173,6 +197,12 @@ public partial struct SubtitleStreamInfo
     public Dictionary<string, string> metadata;
 
     public SubtitleCodecParameters codec;
+
+    public SubtitleStreamInfo()
+    {
+        metadata = [];
+        codec = new();
+    }
 }
 
 public partial struct ChapterInfo
@@ -182,6 +212,11 @@ public partial struct ChapterInfo
     public long end_time;
 
     public string title;
+
+    public ChapterInfo()
+    {
+        title = "";
+    }
 }
 
 public partial struct ProgramInfo
@@ -197,6 +232,12 @@ public partial struct ProgramInfo
     /// "service_name", "service_provider" etc.
     /// </summary>
     public Dictionary<string, string> metadata;
+
+    public ProgramInfo()
+    {
+        stream = [];
+        metadata = [];
+    }
 }
 
 public partial struct MediaInfo
@@ -237,45 +278,48 @@ public partial struct MediaInfo
 
     public List<ProgramInfo> program;
 
+    public MediaInfo()
+    {
+        format = "";
+        chapters = [];
+        metadata = [];
+        audio = [];
+        video = [];
+        subtitle = [];
+        program = [];
+    }
+
     internal static unsafe void From_c(mdkMediaInfo* cinfo, ref MediaInfo mediaInfo)
     {
+        mediaInfo = new MediaInfo();
+        if (cinfo == null)
+            return;
+
         mediaInfo.start_time = cinfo->start_time;
         mediaInfo.duration = cinfo->duration;
         mediaInfo.bit_rate = cinfo->bit_rate;
         mediaInfo.size = cinfo->size;
-        mediaInfo.format = Marshal.PtrToStringUTF8((nint)cinfo->format) ?? "";
+        mediaInfo.format = PtrToString(cinfo->format);
         mediaInfo.streams = cinfo->streams;
-        mediaInfo.metadata = [];
-        mediaInfo.chapters = [];
-        mediaInfo.audio = [];
-        mediaInfo.video = [];
-        mediaInfo.subtitle = [];
-        mediaInfo.program = [];
+        mediaInfo.metadata = ReadMetadata(cinfo);
 
-        mdkStringMapEntry e = default;
-        while (0 != Methods.MDK_MediaMetadata(cinfo, &e))
-        {
-            var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
-            var value = Marshal.PtrToStringUTF8((nint)e.value) ?? "";
-            mediaInfo.metadata.TryAdd(key, value);
-        }
-
-        for (var i = 0; i < cinfo->nb_chapters; ++i)
+        var chapterCount = NativeCount(cinfo->chapters, cinfo->nb_chapters);
+        mediaInfo.chapters = new List<ChapterInfo>(chapterCount);
+        for (var i = 0; i < chapterCount; ++i)
         {
             var cci = &cinfo->chapters[i];
             ChapterInfo ci = new()
             {
                 start_time = cci->start_time,
-                end_time = cci->end_time
+                end_time = cci->end_time,
+                title = PtrToString(cci->title)
             };
-            if (cci->title != null)
-            {
-                ci.title = Marshal.PtrToStringUTF8((nint)cci->title) ?? "";
-            }
             mediaInfo.chapters.Add(ci);
         }
 
-        for (var i = 0; i < cinfo->nb_audio; ++i)
+        var audioCount = NativeCount(cinfo->audio, cinfo->nb_audio);
+        mediaInfo.audio = new List<AudioStreamInfo>(audioCount);
+        for (var i = 0; i < audioCount; ++i)
         {
             AudioStreamInfo si = new();
             var csi = &cinfo->audio[i];
@@ -286,12 +330,13 @@ public partial struct MediaInfo
 
             mdkAudioCodecParameters codec = new();
             Methods.MDK_AudioStreamCodecParameters(csi, &codec);
+            var extraData = CopyNativeBytes(codec.extra_data, codec.extra_data_size);
             si.codec = new AudioCodecParameters
             {
-                codec = Marshal.PtrToStringUTF8((nint)codec.codec) ?? "",
+                codec = PtrToString(codec.codec),
                 codec_tag = codec.codec_tag,
-                extra_data = (nint)codec.extra_data,
-                extra_data_size = codec.extra_data_size,
+                extra_data = extraData,
+                extra_data_size = extraData.Length,
                 bit_rate = codec.bit_rate,
                 profile = codec.profile,
                 level = codec.level,
@@ -305,20 +350,13 @@ public partial struct MediaInfo
                 block_align = codec.block_align,
                 frame_size = codec.frame_size,
             };
-            si.metadata = [];
-            e.key = null;
-            e.value = null;
-            e.priv = null;
-            while (Methods.MDK_AudioStreamMetadata(csi, &e) != 0)
-            {
-                var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
-                var value = Marshal.PtrToStringUTF8((nint)e.value) ?? "";
-                si.metadata.TryAdd(key, value);
-            }
+            si.metadata = ReadMetadata(csi);
             mediaInfo.audio.Add(si);
         }
 
-        for (var i = 0; i < cinfo->nb_video; ++i)
+        var videoCount = NativeCount(cinfo->video, cinfo->nb_video);
+        mediaInfo.video = new List<VideoStreamInfo>(videoCount);
+        for (var i = 0; i < videoCount; ++i)
         {
             VideoStreamInfo si = new();
             var csi = &cinfo->video[i];
@@ -328,20 +366,21 @@ public partial struct MediaInfo
             si.frames = csi->frames;
             si.rotation = csi->rotation;
 
-            mdkVideoCodecParameters codec;
+            mdkVideoCodecParameters codec = default;
             Methods.MDK_VideoStreamCodecParameters(csi, &codec);
+            var extraData = CopyNativeBytes(codec.extra_data, codec.extra_data_size);
             si.codec = new VideoCodecParameters
             {
-                codec = Marshal.PtrToStringUTF8((nint)codec.codec) ?? "",
+                codec = PtrToString(codec.codec),
                 codec_tag = codec.codec_tag,
-                extra_data = (nint)codec.extra_data,
-                extra_data_size = codec.extra_data_size,
+                extra_data = extraData,
+                extra_data_size = extraData.Length,
                 bit_rate = codec.bit_rate,
                 profile = codec.profile,
                 level = codec.level,
                 frame_rate = codec.frame_rate,
                 format = codec.format,
-                format_name = Marshal.PtrToStringUTF8((nint)codec.format_name) ?? "",
+                format_name = PtrToString(codec.format_name),
                 width = codec.width,
                 height = codec.height,
                 b_frames = codec.b_frames,
@@ -349,20 +388,16 @@ public partial struct MediaInfo
                 color_space = (ColorSpace)codec.color_space,
                 dovi_profile = codec.dovi_profile
             };
-            si.metadata = [];
-            e.key = null;
-            e.value = null;
-            e.priv = null;
-            while (Methods.MDK_VideoStreamMetadata(csi, &e) != 0)
-            {
-                var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
-                var value = Marshal.PtrToStringUTF8((nint)e.value) ?? "";
-                si.metadata.TryAdd(key, value);
-            }
+            si.metadata = ReadMetadata(csi);
+            var imageSize = 0;
+            si.image_data = CopyNativeBytes(Methods.MDK_VideoStreamData(csi, &imageSize, 0), imageSize);
+            si.image_size = si.image_data.Length;
             mediaInfo.video.Add(si);
         }
 
-        for (var i = 0; i < cinfo->nb_subtitle; ++i)
+        var subtitleCount = NativeCount(cinfo->subtitle, cinfo->nb_subtitle);
+        mediaInfo.subtitle = new List<SubtitleStreamInfo>(subtitleCount);
+        for (var i = 0; i < subtitleCount; ++i)
         {
             SubtitleStreamInfo si = new();
             var csi = &cinfo->subtitle[i];
@@ -370,53 +405,126 @@ public partial struct MediaInfo
             si.start_time = csi->start_time;
             si.duration = csi->duration;
 
-            mdkSubtitleCodecParameters codec;
+            mdkSubtitleCodecParameters codec = default;
             Methods.MDK_SubtitleStreamCodecParameters(csi, &codec);
+            var extraData = CopyNativeBytes(codec.extra_data, codec.extra_data_size);
             si.codec = new SubtitleCodecParameters
             {
-                codec = Marshal.PtrToStringUTF8((nint)codec.codec) ?? "",
+                codec = PtrToString(codec.codec),
                 codec_tag = codec.codec_tag,
-                extra_data = (nint)codec.extra_data,
-                extra_data_size = codec.extra_data_size,
+                extra_data = extraData,
+                extra_data_size = extraData.Length,
                 width = codec.width,
                 height = codec.height,
             };
-            si.metadata = [];
-            //mdkStringMapEntry entry = default;//必须要new一个，不然会出现野指针
-            e.key = null;
-            e.value = null;
-            e.priv = null;
-            while (Methods.MDK_SubtitleStreamMetadata(csi, &e) != 0)
-            {
-                var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
-                var value = Marshal.PtrToStringUTF8((nint)e.value) ?? "";
-                si.metadata.TryAdd(key, value);
-            }
+            si.metadata = ReadMetadata(csi);
             mediaInfo.subtitle.Add(si);
         }
 
-        for (var i = 0; i < cinfo->nb_programs; ++i)
+        var programCount = NativeCount(cinfo->programs, cinfo->nb_programs);
+        mediaInfo.program = new List<ProgramInfo>(programCount);
+        for (var i = 0; i < programCount; ++i)
         {
             ProgramInfo pi = new();
-            var cpi = cinfo->programs[i];
-            pi.id = cpi.id;
-            pi.stream = [];
-            for (var j = 0; j < cpi.nb_stream; ++j)
+            var cpi = &cinfo->programs[i];
+            pi.id = cpi->id;
+            var streamCount = NativeCount(cpi->stream, cpi->nb_stream);
+            pi.stream = new List<int>(streamCount);
+            for (var j = 0; j < streamCount; ++j)
             {
-                pi.stream.Add(cpi.stream[j]);
+                pi.stream.Add(cpi->stream[j]);
             }
-            pi.metadata = [];
-            e.key = null;
-            e.value = null;
-            e.priv = null;
-            while (Methods.MDK_ProgramMetadata(&cpi, &e) != 0)
-            {
-                var key = Marshal.PtrToStringUTF8((nint)e.key) ?? "";
-                var value = Marshal.PtrToStringUTF8((nint)e.value) ?? "";
-                pi.metadata.TryAdd(key, value);
-            }
+            pi.metadata = ReadMetadata(cpi);
             mediaInfo.program.Add(pi);
         }
+    }
+
+    private static unsafe string PtrToString(sbyte* value)
+    {
+        return value == null ? "" : Marshal.PtrToStringUTF8((nint)value) ?? "";
+    }
+
+    private static unsafe byte[] CopyNativeBytes(byte* data, int size)
+    {
+        return data == null || size <= 0 ? [] : new ReadOnlySpan<byte>(data, size).ToArray();
+    }
+
+    private static unsafe int NativeCount<T>(T* data, int count) where T : unmanaged
+    {
+        return data == null || count <= 0 ? 0 : count;
+    }
+
+    private static unsafe Dictionary<string, string> ReadMetadata(mdkMediaInfo* info)
+    {
+        Dictionary<string, string> metadata = [];
+        if (info == null)
+            return metadata;
+
+        mdkStringMapEntry entry = default;
+        while (Methods.MDK_MediaMetadata(info, &entry) != 0)
+            AddMetadata(metadata, &entry);
+
+        return metadata;
+    }
+
+    private static unsafe Dictionary<string, string> ReadMetadata(mdkAudioStreamInfo* info)
+    {
+        Dictionary<string, string> metadata = [];
+        if (info == null)
+            return metadata;
+
+        mdkStringMapEntry entry = default;
+        while (Methods.MDK_AudioStreamMetadata(info, &entry) != 0)
+            AddMetadata(metadata, &entry);
+
+        return metadata;
+    }
+
+    private static unsafe Dictionary<string, string> ReadMetadata(mdkVideoStreamInfo* info)
+    {
+        Dictionary<string, string> metadata = [];
+        if (info == null)
+            return metadata;
+
+        mdkStringMapEntry entry = default;
+        while (Methods.MDK_VideoStreamMetadata(info, &entry) != 0)
+            AddMetadata(metadata, &entry);
+
+        return metadata;
+    }
+
+    private static unsafe Dictionary<string, string> ReadMetadata(mdkSubtitleStreamInfo* info)
+    {
+        Dictionary<string, string> metadata = [];
+        if (info == null)
+            return metadata;
+
+        mdkStringMapEntry entry = default;
+        while (Methods.MDK_SubtitleStreamMetadata(info, &entry) != 0)
+            AddMetadata(metadata, &entry);
+
+        return metadata;
+    }
+
+    private static unsafe Dictionary<string, string> ReadMetadata(mdkProgramInfo* info)
+    {
+        Dictionary<string, string> metadata = [];
+        if (info == null)
+            return metadata;
+
+        mdkStringMapEntry entry = default;
+        while (Methods.MDK_ProgramMetadata(info, &entry) != 0)
+            AddMetadata(metadata, &entry);
+
+        return metadata;
+    }
+
+    private static unsafe void AddMetadata(Dictionary<string, string> metadata, mdkStringMapEntry* entry)
+    {
+        if (entry == null || entry->key == null)
+            return;
+
+        metadata[PtrToString(entry->key)] = PtrToString(entry->value);
     }
 }
 
