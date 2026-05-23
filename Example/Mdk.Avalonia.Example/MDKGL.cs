@@ -15,7 +15,6 @@ internal class Mdkgl : OpenGlControlBase
     private PixelSize _pixelSize;
     private readonly MDKPlayer _player = new();
     private GLRenderAPI _ra = new();
-    private string _url = "";
 
     public Mdkgl()
     {
@@ -37,13 +36,13 @@ internal class Mdkgl : OpenGlControlBase
 
     public string MediaPath
     {
-        get => _url;
+        get;
         set
         {
-            _url = value;
-            _player.SetMedia(_url);
+            field = value;
+            _player.SetMedia(field);
         }
-    }
+    } = "";
 
     protected override void OnOpenGlRender(GlInterface gl, int fb)
     {
