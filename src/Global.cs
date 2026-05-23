@@ -496,7 +496,7 @@ public class Global
             sbyte* ptr = null;
             var ret = Methods.MDK_getGlobalOptionString(key, &ptr);
             value = Marshal.PtrToStringUTF8((nint)ptr) ?? "";
-            return *(bool*)ret;
+            return ret != 0;
         }
     }
 
@@ -513,7 +513,7 @@ public class Global
             fixed (int* ptr = &value)
             {
                 var ret = Methods.MDK_getGlobalOptionInt32(key, ptr);
-                return *(bool*)ret;
+                return ret != 0;
             }
         }
     }
@@ -531,7 +531,7 @@ public class Global
             fixed (void* ptr = &value)
             {
                 var ret = Methods.MDK_getGlobalOptionPtr(key, &ptr);
-                return *(bool*)ret;
+                return ret != 0;
             }
         }
     }

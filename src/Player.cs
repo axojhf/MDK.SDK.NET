@@ -326,17 +326,27 @@ public class MDKPlayer : IDisposable
     /// <param name="names"></param>
     public void SetAudioBackends(List<string> names)
     {
+        ArgumentNullException.ThrowIfNull(names);
+
         unsafe
         {
-            var pdata = stackalloc sbyte*[names.Count];
-            for (int i = 0; i < names.Count; i++)
+            var pdata = stackalloc sbyte*[names.Count + 1];
+            try
             {
-                pdata[i++] = (sbyte*)Marshal.StringToCoTaskMemUTF8(names[i]);
+                for (int i = 0; i < names.Count; i++)
+                {
+                    pdata[i] = (sbyte*)Marshal.StringToCoTaskMemUTF8(names[i]);
+                }
+
+                pdata[names.Count] = null;
+                _p->setAudioBackends(_p->@object, pdata);
             }
-            _p->setAudioBackends(_p->@object, pdata);
-            for (int i = 0; i < names.Count; i++)
+            finally
             {
-                Marshal.FreeCoTaskMem((IntPtr)pdata[i]);
+                for (int i = 0; i < names.Count; i++)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)pdata[i]);
+                }
             }
         }
     }
@@ -351,19 +361,28 @@ public class MDKPlayer : IDisposable
     /// <param name="names"></param>
     public void SetDecoders(MediaType type, List<string> names)
     {
+        ArgumentNullException.ThrowIfNull(names);
+
         unsafe
         {
-            var pdata = stackalloc sbyte*[names.Count];
-            for (int i = 0; i < names.Count; i++)
+            var pdata = stackalloc sbyte*[names.Count + 1];
+            try
             {
-                pdata[i] = (sbyte*)Marshal.StringToCoTaskMemUTF8(names[i]);
-            }
-            _p->setDecoders(_p->@object, (MDK_MediaType)type, (sbyte*)pdata);
-            for (int i = 0; i < names.Count; i++)
-            {
-                Marshal.FreeCoTaskMem((IntPtr)pdata[i]);
-            }
+                for (int i = 0; i < names.Count; i++)
+                {
+                    pdata[i] = (sbyte*)Marshal.StringToCoTaskMemUTF8(names[i]);
+                }
 
+                pdata[names.Count] = null;
+                _p->setDecoders(_p->@object, (MDK_MediaType)type, (sbyte*)pdata);
+            }
+            finally
+            {
+                for (int i = 0; i < names.Count; i++)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)pdata[i]);
+                }
+            }
         }
     }
 
