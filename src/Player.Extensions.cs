@@ -1,5 +1,7 @@
 ﻿using System.Text;
 
+// ReSharper disable UnusedMember.Global
+
 namespace MDK.SDK.NET;
 /// <summary>
 /// Player.Extensions

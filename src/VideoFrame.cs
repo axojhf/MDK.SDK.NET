@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using MDK.SDK.NET.Gen;
 
+// ReSharper disable UnusedMember.Global
+
 namespace MDK.SDK.NET;
 
 /// <summary>

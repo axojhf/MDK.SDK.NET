@@ -4,6 +4,8 @@ using System.Text;
 using MDK.SDK.NET.Gen;
 using CallbackToken = ulong;
 
+// ReSharper disable UnusedMember.Global
+
 namespace MDK.SDK.NET;
 
 /// <summary>
@@ -17,18 +19,20 @@ public class MDKPlayer : IDisposable
 
     private bool _mute;
     private float _volume = 1.0f;
-    private readonly Dictionary<CallbackToken, CallBackOnEvent> _eventCb = [];
-    private readonly Dictionary<CallbackToken, CallbackToken> _eventCbKey = [];
-    private readonly Dictionary<CallbackToken, CallBackOnLoop> _loopCb = [];
-    private readonly Dictionary<CallbackToken, CallbackToken> _loopCbKey = [];
+    private readonly Lock _eventMtx = new();
+    private readonly Dictionary<CallbackToken, EventRegistration> _eventRegistrations = [];
+    private readonly List<EventRegistration> _retiredEventRegistrations = [];
     private readonly Lock _loopMtx = new();
-    private readonly Dictionary<CallbackToken, CallBackOnMediaStatus> _statusCb = [];
-    private readonly Dictionary<CallbackToken, CallbackToken> _statusCbKey = [];
+    private readonly Dictionary<CallbackToken, LoopRegistration> _loopRegistrations = [];
+    private readonly List<LoopRegistration> _retiredLoopRegistrations = [];
     private readonly Lock _statusMtx = new();
+    private readonly Dictionary<CallbackToken, MediaStatusRegistration> _statusRegistrations = [];
+    private readonly List<MediaStatusRegistration> _retiredStatusRegistrations = [];
 
-    private static CallbackToken _onEventK = 1;
-    private static CallbackToken _onLoopK = 1;
-    private static CallbackToken _onStatusK = 1;
+    internal interface ICallbackRegistration : IDisposable
+    {
+        bool Disposed { get; }
+    }
 
     /// <summary>
     /// Initializes a new instance of MDK player.
@@ -691,59 +695,138 @@ public class MDKPlayer : IDisposable
     /// </summary>
     public delegate bool CallBackOnMediaStatus(MediaStatus old, MediaStatus @new);
 
+    internal sealed class MediaStatusRegistration(MDKPlayer player, CallBackOnMediaStatus callback) : ICallbackRegistration
+    {
+        public CallBackOnMediaStatus? Callback { get; set; } = callback;
+        public CallbackToken NativeToken { get; set; }
+        public GCHandle Handle { get; set; }
+        public bool Disposed { get; set; }
+        public Lock Lock { get; } = new();
+
+        public void Dispose() => player.RemoveMediaStatusRegistration(this);
+    }
+
     /// <summary>
-    /// Add/Remove a callback or clear all callbacks for MediaStatus change.
+    /// Adds a callback to be invoked when MediaStatus changes.
     /// </summary>
-    /// <param name="cb">the callback. return true. null to clear callbacks.</param>
-    /// <param name="token">see https://github.com/wang-bin/mdk-sdk/wiki/Types#callbacktoken</param>
-    /// <returns></returns>
-    public MDKPlayer OnMediaStatus(CallBackOnMediaStatus? cb, IntPtr token = 0)
+    /// <param name="cb">the callback. return true if the status change is processed and should stop dispatching.</param>
+    /// <returns>A registration object that unregisters the callback when disposed.</returns>
+    public CallbackRegistration OnMediaStatus(CallBackOnMediaStatus cb)
+    {
+        ArgumentNullException.ThrowIfNull(cb);
+        unsafe
+        {
+            lock (_statusMtx)
+            {
+                ObjectDisposedException.ThrowIf(_p == null, this);
+
+                var registration = new MediaStatusRegistration(this, cb);
+                registration.Handle = GCHandle.Alloc(registration);
+                try
+                {
+                    var callback = new mdkMediaStatusCallback
+                    {
+                        cb = &OnMediaStatusNative,
+                        opaque = (void*)GCHandle.ToIntPtr(registration.Handle),
+                    };
+
+                    CallbackToken token = 0;
+                    _p->onMediaStatus(_p->@object, callback, &token);
+                    registration.NativeToken = token;
+                    _statusRegistrations[token] = registration;
+                    return new CallbackRegistration(registration);
+                }
+                catch
+                {
+                    registration.Handle.Free();
+                    throw;
+                }
+            }
+        }
+    }
+
+    private void RemoveMediaStatusRegistration(MediaStatusRegistration registration)
     {
         unsafe
         {
             lock (_statusMtx)
             {
-                mdkMediaStatusCallback callback = new();
-                if (cb == null)
+                lock (registration.Lock)
                 {
-                    _p->onMediaStatus(_p->@object, callback, (CallbackToken*)(token != IntPtr.Zero ? _statusCbKey[*(CallbackToken*)token] : 0));
-                    if (token != IntPtr.Zero)
-                    {
-                        _statusCb.Remove(*(CallbackToken*)token);
-                        _statusCbKey.Remove(*(CallbackToken*)token);
-                    }
-                    else
-                    {
-                        _statusCb.Clear();
-                        _statusCbKey.Clear();
-                    }
-                }
-                else
-                {
-                    _statusCb[_onStatusK] = cb;
-                    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-                    static byte Temp(MDK_MediaStatus old, MDK_MediaStatus value, void* opaque)
-                    {
-                        return (byte)(Marshal.GetDelegateForFunctionPointer<CallBackOnMediaStatus>((nint)opaque)((MediaStatus)old, (MediaStatus)value) ? 1 : 0);
-                    }
-                    callback = new()
-                    {
-                        cb = &Temp,
-                        opaque = (void*)Marshal.GetFunctionPointerForDelegate(_statusCb[_onStatusK]),
-                    };
-                    CallbackToken t = 0;
-                    _p->onMediaStatus(_p->@object, callback, &t);
-                    _statusCbKey[_onStatusK] = t;
-                    if (token != 0)
-                    {
-                        *(CallbackToken*)token = t;
-                    }
-                    _onStatusK++;
+                    if (registration.Disposed)
+                        return;
+
+                    registration.Disposed = true;
+                    registration.Callback = null;
                 }
 
+                if (_p != null)
+                {
+                    var token = registration.NativeToken;
+                    _p->onMediaStatus(_p->@object, default, &token);
+                }
+
+                _statusRegistrations.Remove(registration.NativeToken);
+                _retiredStatusRegistrations.Add(registration);
             }
         }
-        return this;
+    }
+
+    private unsafe void ClearMediaStatusRegistrationsForDispose()
+    {
+        _p->onMediaStatus(_p->@object, default, null);
+
+        lock (_statusMtx)
+        {
+            foreach (var registration in _statusRegistrations.Values)
+            {
+                lock (registration.Lock)
+                {
+                    registration.Disposed = true;
+                    registration.Callback = null;
+                }
+
+                registration.Handle.Free();
+            }
+
+            _statusRegistrations.Clear();
+
+            foreach (var registration in _retiredStatusRegistrations)
+            {
+                registration.Handle.Free();
+            }
+
+            _retiredStatusRegistrations.Clear();
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe byte OnMediaStatusNative(MDK_MediaStatus old, MDK_MediaStatus value, void* opaque)
+    {
+        if (opaque == null)
+            return 0;
+
+        try
+        {
+            var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+            if (handle.Target is not MediaStatusRegistration registration)
+                return 0;
+
+            CallBackOnMediaStatus? callback;
+            lock (registration.Lock)
+            {
+                if (registration.Disposed)
+                    return 0;
+
+                callback = registration.Callback;
+            }
+
+            return callback?.Invoke((MediaStatus)old, (MediaStatus)value) == true ? (byte)1 : (byte)0;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     /// <summary>
@@ -1598,81 +1681,185 @@ public class MDKPlayer : IDisposable
     /// a delegate for OnEvent
     /// </summary>
     public delegate bool CallBackOnEvent(MediaEvent a);
-    private class EventCallbackCtx
+
+    internal sealed class EventRegistration(MDKPlayer player, CallBackOnEvent callback) : ICallbackRegistration
     {
-        public CallBackOnEvent? Callback { get; set; }
+        public CallBackOnEvent? Callback { get; set; } = callback;
+        public CallbackToken NativeToken { get; set; }
+        public GCHandle Handle { get; set; }
+        public bool Disposed { get; set; }
         public Lock Lock { get; } = new();
+
+        public void Dispose() => player.RemoveEventRegistration(this);
     }
-    private readonly EventCallbackCtx _eventCtx = new();
-    // private GCHandle? _eventCtxGcHandle;
 
     /// <summary>
-    /// Add/Remove a CallBackOnEvent listener, or remove listeners.
+    /// Represents a registered player callback.
+    /// </summary>
+    public sealed class CallbackRegistration : IDisposable
+    {
+        private ICallbackRegistration? _registration;
+
+        internal CallbackRegistration(ICallbackRegistration registration)
+        {
+            _registration = registration;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the callback has been unregistered.
+        /// </summary>
+        public bool IsDisposed
+        {
+            get
+            {
+                var registration = Volatile.Read(ref _registration);
+                return registration is null || registration.Disposed;
+            }
+        }
+
+        /// <summary>
+        /// Unregisters the callback.
+        /// </summary>
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _registration, null)?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Adds a MediaEvent listener.
     /// </summary>
     /// <param name="cb">the callback. return true if event is processed and should stop dispatching.</param>
-    /// <param name="token">see https://github.com/wang-bin/mdk-sdk/wiki/Types#callbacktoken</param>
-    /// <returns></returns>
-    public MDKPlayer OnEvent(CallBackOnEvent? cb, IntPtr token = 0)
+    /// <returns>A registration object that unregisters the callback when disposed.</returns>
+    public CallbackRegistration OnEvent(CallBackOnEvent cb)
     {
-
+        ArgumentNullException.ThrowIfNull(cb);
         unsafe
         {
-            lock (_eventCtx.Lock)
+            lock (_eventMtx)
             {
-                mdkMediaEventCallback callback = new();
-                if (cb == null)
-                {
-                    _p->onEvent(_p->@object, callback,
-                        (CallbackToken*)(token != IntPtr.Zero ? _eventCbKey[*(CallbackToken*)token] : 0));
-                    if (token != IntPtr.Zero)
-                    {
-                        _eventCb.Remove(*(CallbackToken*)token);
-                        _eventCbKey.Remove(*(CallbackToken*)token);
-                    }
-                    else
-                    {
-                        _eventCb.Clear();
-                        _eventCbKey.Clear();
-                    }
-                }
-                else
-                {
-                    _eventCb[_onEventK] = cb;
+                ObjectDisposedException.ThrowIf(_p == null, this);
 
-                    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-                    static byte Temp(mdkMediaEvent* me, void* opaque)
+                var registration = new EventRegistration(this, cb);
+                registration.Handle = GCHandle.Alloc(registration);
+                try
+                {
+                    var callback = new mdkMediaEventCallback
                     {
-                        var f = Marshal.GetDelegateForFunctionPointer<CallBackOnEvent>((nint)opaque);
-                        MediaEvent e = new()
-                        {
-                            Error = me->error,
-                            Category = Marshal.PtrToStringUTF8((nint)me->category) ?? "",
-                            Detail = Marshal.PtrToStringUTF8((nint)me->detail) ?? "",
-                            Stream = me->decoder.stream,
-                            VideoHeight = me->video.height,
-                            VideoWidth = me->video.width,
-                        };
-                        return (byte)(f(e) ? 1 : 0);
-                    }
-
-                    callback = new()
-                    {
-                        cb = &Temp,
-                        opaque = (void*)Marshal.GetFunctionPointerForDelegate(_eventCb[_onEventK]),
+                        cb = &OnEventNative,
+                        opaque = (void*)GCHandle.ToIntPtr(registration.Handle),
                     };
-                    CallbackToken t = 0;
-                    _p->onEvent(_p->@object, callback, &t);
-                    _eventCbKey[_onEventK] = t;
-                    if (token != IntPtr.Zero)
-                    {
-                        *(CallbackToken*)token = t;
-                    }
 
-                    _onEventK++;
+                    CallbackToken token = 0;
+                    _p->onEvent(_p->@object, callback, &token);
+                    registration.NativeToken = token;
+                    _eventRegistrations[token] = registration;
+                    return new CallbackRegistration(registration);
+                }
+                catch
+                {
+                    registration.Handle.Free();
+                    throw;
                 }
             }
         }
-        return this;
+    }
+
+    private void RemoveEventRegistration(EventRegistration registration)
+    {
+        unsafe
+        {
+            lock (_eventMtx)
+            {
+                lock (registration.Lock)
+                {
+                    if (registration.Disposed)
+                        return;
+
+                    registration.Disposed = true;
+                    registration.Callback = null;
+                }
+
+                if (_p != null)
+                {
+                    var token = registration.NativeToken;
+                    _p->onEvent(_p->@object, default, &token);
+                }
+
+                _eventRegistrations.Remove(registration.NativeToken);
+                _retiredEventRegistrations.Add(registration);
+            }
+        }
+    }
+
+    private unsafe void ClearEventRegistrationsForDispose()
+    {
+        _p->onEvent(_p->@object, default, null);
+
+        lock (_eventMtx)
+        {
+            foreach (var registration in _eventRegistrations.Values)
+            {
+                lock (registration.Lock)
+                {
+                    registration.Disposed = true;
+                    registration.Callback = null;
+                }
+
+                registration.Handle.Free();
+            }
+
+            _eventRegistrations.Clear();
+
+            foreach (var registration in _retiredEventRegistrations)
+            {
+                registration.Handle.Free();
+            }
+
+            _retiredEventRegistrations.Clear();
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe byte OnEventNative(mdkMediaEvent* me, void* opaque)
+    {
+        if (opaque == null || me == null)
+            return 0;
+
+        try
+        {
+            var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+            if (handle.Target is not EventRegistration registration)
+                return 0;
+
+            CallBackOnEvent? callback;
+            lock (registration.Lock)
+            {
+                if (registration.Disposed)
+                    return 0;
+
+                callback = registration.Callback;
+            }
+
+            if (callback is null)
+                return 0;
+
+            var e = new MediaEvent
+            {
+                Error = me->error,
+                Category = Marshal.PtrToStringUTF8((IntPtr)me->category) ?? "",
+                Detail = Marshal.PtrToStringUTF8((IntPtr)me->detail) ?? "",
+                Stream = me->decoder.stream,
+                VideoHeight = me->video.height,
+                VideoWidth = me->video.width,
+            };
+
+            return callback(e) ? (byte)1 : (byte)0;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     /// <summary>
@@ -1709,58 +1896,139 @@ public class MDKPlayer : IDisposable
     /// a delegate for OnLoop
     /// </summary>
     public delegate void CallBackOnLoop(int count);
+
+    internal sealed class LoopRegistration(MDKPlayer player, CallBackOnLoop callback) : ICallbackRegistration
+    {
+        public CallBackOnLoop? Callback { get; set; } = callback;
+        public CallbackToken NativeToken { get; set; }
+        public GCHandle Handle { get; set; }
+        public bool Disposed { get; set; }
+        public Lock Lock { get; } = new();
+
+        public void Dispose() => player.RemoveLoopRegistration(this);
+    }
+
     /// <summary>
-    /// add/remove a callback which will be invoked right before a new A-B loop
+    /// Adds a callback which will be invoked right before a new A-B loop.
     /// </summary>
     /// <param name="cb">callback with current loop count elapsed</param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    public MDKPlayer OnLoop(CallBackOnLoop? cb, IntPtr token = 0)
+    /// <returns>A registration object that unregisters the callback when disposed.</returns>
+    public CallbackRegistration OnLoop(CallBackOnLoop cb)
     {
+        ArgumentNullException.ThrowIfNull(cb);
         unsafe
         {
-            mdkLoopCallback callback = new();
             lock (_loopMtx)
             {
-                if (cb == null)
+                ObjectDisposedException.ThrowIf(_p == null, this);
+
+                var registration = new LoopRegistration(this, cb);
+                registration.Handle = GCHandle.Alloc(registration);
+                try
                 {
-                    _p->onLoop(_p->@object, callback, (CallbackToken*)(token != IntPtr.Zero ? _loopCbKey[*(CallbackToken*)token] : 0));
-                    if (token != IntPtr.Zero)
+                    var callback = new mdkLoopCallback
                     {
-                        _loopCb.Remove(*(CallbackToken*)token);
-                        _loopCbKey.Remove(*(CallbackToken*)token);
-                    }
-                    else
-                    {
-                        _loopCb.Clear();
-                        _loopCbKey.Clear();
-                    }
-                }
-                else
-                {
-                    _loopCb[_onLoopK] = cb;
-                    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-                    static void Temp(int count, void* opaque)
-                    {
-                        Marshal.GetDelegateForFunctionPointer<CallBackOnLoop>((nint)opaque)(count);
-                    }
-                    callback = new()
-                    {
-                        cb = &Temp,
-                        opaque = (void*)Marshal.GetFunctionPointerForDelegate(_loopCb[_onLoopK]),
+                        cb = &OnLoopNative,
+                        opaque = (void*)GCHandle.ToIntPtr(registration.Handle),
                     };
-                    CallbackToken t = 0;
-                    _p->onLoop(_p->@object, callback, &t);
-                    _loopCbKey[_onLoopK] = t;
-                    if (token != IntPtr.Zero)
-                    {
-                        *(CallbackToken*)token = t;
-                    }
-                    _onLoopK++;
+
+                    CallbackToken token = 0;
+                    _p->onLoop(_p->@object, callback, &token);
+                    registration.NativeToken = token;
+                    _loopRegistrations[token] = registration;
+                    return new CallbackRegistration(registration);
+                }
+                catch
+                {
+                    registration.Handle.Free();
+                    throw;
                 }
             }
         }
-        return this;
+    }
+
+    private void RemoveLoopRegistration(LoopRegistration registration)
+    {
+        unsafe
+        {
+            lock (_loopMtx)
+            {
+                lock (registration.Lock)
+                {
+                    if (registration.Disposed)
+                        return;
+
+                    registration.Disposed = true;
+                    registration.Callback = null;
+                }
+
+                if (_p != null)
+                {
+                    var token = registration.NativeToken;
+                    _p->onLoop(_p->@object, default, &token);
+                }
+
+                _loopRegistrations.Remove(registration.NativeToken);
+                _retiredLoopRegistrations.Add(registration);
+            }
+        }
+    }
+
+    private unsafe void ClearLoopRegistrationsForDispose()
+    {
+        _p->onLoop(_p->@object, default, null);
+
+        lock (_loopMtx)
+        {
+            foreach (var registration in _loopRegistrations.Values)
+            {
+                lock (registration.Lock)
+                {
+                    registration.Disposed = true;
+                    registration.Callback = null;
+                }
+
+                registration.Handle.Free();
+            }
+
+            _loopRegistrations.Clear();
+
+            foreach (var registration in _retiredLoopRegistrations)
+            {
+                registration.Handle.Free();
+            }
+
+            _retiredLoopRegistrations.Clear();
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe void OnLoopNative(int count, void* opaque)
+    {
+        if (opaque == null)
+            return;
+
+        try
+        {
+            var handle = GCHandle.FromIntPtr((IntPtr)opaque);
+            if (handle.Target is not LoopRegistration registration)
+                return;
+
+            CallBackOnLoop? callback;
+            lock (registration.Lock)
+            {
+                if (registration.Disposed)
+                    return;
+
+                callback = registration.Callback;
+            }
+
+            callback?.Invoke(count);
+        }
+        catch
+        {
+            // Managed exceptions must not cross the unmanaged callback boundary.
+        }
     }
 
     /// <summary>
@@ -2183,6 +2451,9 @@ public class MDKPlayer : IDisposable
             _p->onSubtitleText(_p->@object, default, 1, null);
             _p->onVideo(_p->@object, default);
             _p->onAudio(_p->@object, default);
+            ClearMediaStatusRegistrationsForDispose();
+            ClearEventRegistrationsForDispose();
+            ClearLoopRegistrationsForDispose();
 
             lock (_currentCtx.Lock)
             {

@@ -1,6 +1,8 @@
 using MDK.SDK.NET.Gen;
 using System.Runtime.InteropServices;
 
+// ReSharper disable UnusedMember.Global
+
 namespace MDK.SDK.NET;
 
 public enum RenderType

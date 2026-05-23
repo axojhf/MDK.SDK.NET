@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MDK.SDK.NET.Gen;
 
+// ReSharper disable UnusedMember.Global
+
 namespace MDK.SDK.NET;
 
 /// <summary>
